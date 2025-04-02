@@ -79,8 +79,8 @@ export default function ChangePasswordScreen() {
       router.back();
     } catch (err) {
       console.error(error);
-      if (err.response.data.message) {
-        showAlert("error", err.response.data.message);
+      if (err.response?.data.message) {
+        showAlert("error", err.response?.data.message);
       } else if (err.message) {
         showAlert("error", err.message);
       } else {

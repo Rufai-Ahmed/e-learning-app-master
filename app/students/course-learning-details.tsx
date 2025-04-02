@@ -1,86 +1,96 @@
-"use client"
+"use client";
 
-import ForumContent from "@/components/ui/CourseLearningForum"
-import HomeContent from "@/components/ui/CourseLearningHome"
-import InfoScreen from "@/components/ui/CourseLearningInfo"
-import QuizScreen from "@/components/ui/CourseLearningQuizGrades"
-import { useState, useRef, useEffect } from "react"
-import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Dimensions, Animated, ActivityIndicator } from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
-import { api } from "@/lib/actions/api"
-import { useAppSelector } from "@/hooks/useAppSelector"
+import ForumContent from "@/components/ui/CourseLearningForum";
+import HomeContent from "@/components/ui/CourseLearningHome";
+import InfoScreen from "@/components/ui/CourseLearningInfo";
+import QuizScreen from "@/components/ui/CourseLearningQuizGrades";
+import { useState, useRef, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Text,
+  Dimensions,
+  Animated,
+  ActivityIndicator,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { api } from "@/lib/actions/api";
+import { useAppSelector } from "@/hooks/useAppSelector";
 
-const { width } = Dimensions.get("window")
+const { width } = Dimensions.get("window");
 
-const tabs = ["Home", "Grades", "Forums", "Info"]
+const tabs = ["Home", "Grades", "Forums", "Info"];
 
 export default function MainScreen({ navigation }) {
-  const [activeTab, setActiveTab] = useState("Home")
-  const [activeWeek, setActiveWeek] = useState(1)
-  const scrollViewRef = useRef(null)
-  const tabPositions = useRef({})
-  const indicatorAnim = useRef(new Animated.Value(0)).current
-  const [indicatorWidth, setIndicatorWidth] = useState(0)
-  const [indicatorPosition, setIndicatorPosition] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const course = useAppSelector(state => state.courses.courseDetails)
-  const [courseDetails, setCourseDetails] = useState(null)
-  const token = useAppSelector(state => state.user.userLoginToken)
+  const [activeTab, setActiveTab] = useState("Home");
+  const [activeWeek, setActiveWeek] = useState(1);
+  const scrollViewRef = useRef(null);
+  const tabPositions = useRef({});
+  const indicatorAnim = useRef(new Animated.Value(0)).current;
+  const [indicatorWidth, setIndicatorWidth] = useState(0);
+  const [indicatorPosition, setIndicatorPosition] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const course = useAppSelector((state) => state.courses.courseDetails);
+  const [courseDetails, setCourseDetails] = useState(null);
+  const token = useAppSelector((state) => state.user.userLoginToken);
 
   const fetchCourseDetails = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const response = await api.getCoursesById(course?.id, token)
+      const response = await api.getCoursesById(course?.id, token);
 
-      console.log(response.data)
-      setCourseDetails(response.data)
+      console.log(response?.data);
+      setCourseDetails(response?.data);
     } catch (error) {
-      console.error("Error fetching course details:", error)
+      console.error("Error fetching course details:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-
-    fetchCourseDetails()
-  }, [])
-
+    fetchCourseDetails();
+  }, []);
 
   const measureTab = (tab, event) => {
-    const { x, width } = event.nativeEvent.layout
-    tabPositions.current[tab] = { x, width }
+    const { x, width } = event.nativeEvent.layout;
+    tabPositions.current[tab] = { x, width };
 
     if (tab === activeTab) {
-      setIndicatorWidth(width)
-      setIndicatorPosition(x)
+      setIndicatorWidth(width);
+      setIndicatorPosition(x);
       Animated.spring(indicatorAnim, {
         toValue: x,
         useNativeDriver: true,
         tension: 300,
         friction: 20,
-      }).start()
+      }).start();
     }
-  }
+  };
 
   useEffect(() => {
     if (tabPositions.current[activeTab]) {
-      const { x, width } = tabPositions.current[activeTab]
-      setIndicatorWidth(width)
-      setIndicatorPosition(x)
+      const { x, width } = tabPositions.current[activeTab];
+      setIndicatorWidth(width);
+      setIndicatorPosition(x);
 
       Animated.spring(indicatorAnim, {
         toValue: x,
         useNativeDriver: true,
         tension: 300,
         friction: 20,
-      }).start()
+      }).start();
 
       if (scrollViewRef.current) {
-        scrollViewRef.current.scrollTo({ x: Math.max(0, x - width), animated: true })
+        scrollViewRef.current.scrollTo({
+          x: Math.max(0, x - width),
+          animated: true,
+        });
       }
     }
-  }, [activeTab, indicatorAnim])
+  }, [activeTab, indicatorAnim]);
 
   const renderActiveTabContent = () => {
     switch (activeTab) {
@@ -89,17 +99,17 @@ export default function MainScreen({ navigation }) {
           <ActivityIndicator size="large" color="#4169E1" />
         ) : (
           <HomeContent courseDetails={courseDetails} navigation={navigation} />
-        )
+        );
       case "Grades":
-        return <QuizScreen navigation={navigation} />
+        return <QuizScreen navigation={navigation} />;
       case "Forums":
-        return <ForumContent navigation={navigation} />
+        return <ForumContent navigation={navigation} />;
       case "Info":
-        return <InfoScreen navigation={navigation} />
+        return <InfoScreen navigation={navigation} />;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -119,7 +129,14 @@ export default function MainScreen({ navigation }) {
               onLayout={(event) => measureTab(tab, event)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{tab}</Text>
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === tab && styles.activeTabText,
+                ]}
+              >
+                {tab}
+              </Text>
             </TouchableOpacity>
           ))}
 
@@ -135,9 +152,11 @@ export default function MainScreen({ navigation }) {
         </ScrollView>
       </View>
 
-      <Animated.View style={styles.contentContainer}>{renderActiveTabContent()}</Animated.View>
+      <Animated.View style={styles.contentContainer}>
+        {renderActiveTabContent()}
+      </Animated.View>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -190,5 +209,4 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
   },
-})
-
+});

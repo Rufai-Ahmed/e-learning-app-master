@@ -89,8 +89,8 @@ export default function ProfileScreen() {
       dispatch(getUserInfo(null));
     } catch (error) {
       console.error(error);
-      if (err.response.data.message) {
-        showAlert("error", err.response.data.message);
+      if (err.response?.data.message) {
+        showAlert("error", err.response?.data.message);
       } else if (err.message) {
         showAlert("error", err.message);
       } else {
@@ -115,12 +115,15 @@ export default function ProfileScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.profileHeader}>
           <View style={styles?.avatarContainer}>
-            {student?.avatar ? (
-              <Image source={{ uri: student?.avatar }} style={styles?.avatar} />
+            {student?.image_link ? (
+              <Image
+                source={{ uri: student?.image_link }}
+                style={styles?.avatar}
+              />
             ) : (
               <View style={[styles?.avatar, styles?.avatarPlaceholder]}>
                 <Text style={styles?.avatarText}>
-                  {(student?.fullname || '')
+                  {(student?.fullname || "")
                     .split(" ")
                     .map((n: string) => n[0])
                     .join("")}

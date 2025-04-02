@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,9 +7,9 @@ import {
   ScrollView,
   Switch,
   Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import {
   ArrowLeft,
   Shield,
@@ -19,11 +19,11 @@ import {
   Key,
   Fingerprint,
   AlertTriangle,
-} from 'lucide-react-native';
+} from "lucide-react-native";
 import { useAlert } from "@/hooks/useAlert";
 import Loader from "@/components/ui/Loader";
-import { api } from '@/lib/actions/api';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { api } from "@/lib/actions/api";
+import { useAppSelector } from "@/hooks/useAppSelector";
 
 export default function PrivacyScreen() {
   const [profileVisible, setProfileVisible] = useState(true);
@@ -32,52 +32,53 @@ export default function PrivacyScreen() {
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const { showAlert } = useAlert();
-  const userData = useAppSelector(state => state.user.user)
-  const userToken = useAppSelector(state => state.user.userLoginToken)
+  const userData = useAppSelector((state) => state.user.user);
+  const userToken = useAppSelector((state) => state.user.userLoginToken);
 
   const handleChangePassword = () => {
-    router.push('/students/profile/change-password');
+    router.push("/students/profile/change-password");
   };
 
   const handleDevices = () => {
-    router.push('/students/profile/devices');
+    router.push("/students/profile/devices");
   };
 
   const handleDeleteAccount = async () => {
     Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action cannot be undone.',
+      "Delete Account",
+      "Are you sure you want to delete your account? This action cannot be undone.",
       [
         {
-          text: 'Cancel',
-          style: 'cancel',
+          text: "Cancel",
+          style: "cancel",
         },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             setLoading(true);
             try {
-              await api.deleteAccount(userData?.id, userToken)
-              showAlert('success', 'Account deleted successfully');
-              router.push('/');
+              await api.deleteAccount(userData?.id, userToken);
+              showAlert("success", "Account deleted successfully");
+              router.push("/");
             } catch (err) {
-              console.log(err.response.data)
-              if(err.response.data.message){
-                showAlert('error', err.response.data.message)
-              }
-              else if(err.message){
-                showAlert('error', err.message)
-              }
-              else {
-                showAlert('error', 'Failed to delete account. Please try again.')
+              console.log(err.response?.data);
+              if (err.response?.data.message) {
+                showAlert("error", err.response?.data.message);
+              } else if (err.message) {
+                showAlert("error", err.message);
+              } else {
+                showAlert(
+                  "error",
+                  "Failed to delete account. Please try again."
+                );
               }
             } finally {
               setLoading(false);
             }
           },
         },
-      ],
+      ]
     );
   };
 
@@ -113,7 +114,7 @@ export default function PrivacyScreen() {
                 </View>
               </View>
             </TouchableOpacity>
-{/* 
+            {/* 
             <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
                 <Key size={24} color="#4CAF50" />
@@ -206,7 +207,7 @@ export default function PrivacyScreen() {
               />
             </View>
           </View> */}
- 
+
         <View style={styles.dangerSection}>
           <TouchableOpacity
             style={styles.deleteButton}
@@ -227,24 +228,24 @@ export default function PrivacyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F9FC',
+    backgroundColor: "#F7F9FC",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontWeight: "600",
+    color: "#1A1A1A",
   },
   headerRight: {
     width: 32,
@@ -257,15 +258,15 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontWeight: "600",
+    color: "#1A1A1A",
     marginBottom: 12,
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 16,
     padding: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -275,15 +276,15 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
     borderRadius: 12,
   },
   settingInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
     marginRight: 16,
   },
@@ -293,37 +294,37 @@ const styles = StyleSheet.create({
   },
   settingTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontWeight: "600",
+    color: "#1A1A1A",
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   dangerSection: {
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF2F2',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFF2F2",
     padding: 16,
     borderRadius: 12,
     gap: 8,
-    width: '100%',
+    width: "100%",
   },
   deleteButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FF4444',
+    fontWeight: "600",
+    color: "#FF4444",
   },
   dangerText: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
     marginTop: 8,
   },
-}); 
+});

@@ -355,17 +355,17 @@ export default function CourseManagementScreen() {
 
       const course = await api.createCourse(body, userToken);
 
-      console.log(course.data.modules);
+      console.log(course?.data.modules);
 
       console.log("here");
       const res = await updateVideosInAPI(
-        course.data.modules,
+        course?.data.modules,
         videoUrl,
         userToken,
-        course.data.id
+        course?.data.id
       );
 
-      console.log(course.data.id, "dess");
+      console.log(course?.data.id, "dess");
 
       const res2 = await api.uploadCourseImage(
         course?.data.id,
@@ -434,10 +434,10 @@ export default function CourseManagementScreen() {
 
       Alert.alert("Success", "All videos updated in API!");
     } catch (error) {
-      console.error("Error updating videos in API:", error.response.data);
+      console.error("Error updating videos in API:", error.response?.data);
       console.error(
         "Error publishing course:",
-        error.response.data.detail[0].loc
+        error.response?.data.detail[0].loc
       );
       Alert.alert("Error", "Failed to update videos. Please try again.");
     }

@@ -112,26 +112,26 @@ export default function NotificationsScreen() {
     // Navigate based on notification type
     switch (notification.type) {
       case "message":
-        if (notification.data?.studentId) {
+        if (notification?.data?.studentId) {
           router.push({
             pathname: "/instructor/conversation/[id]",
-            params: { id: notification.data.studentId },
+            params: { id: notification?.data.studentId },
           });
         }
         break;
       case "course":
-        if (notification.data?.courseId) {
+        if (notification?.data?.courseId) {
           router.push({
             pathname: "/instructor/course/[id]",
-            params: { id: notification.data.courseId },
+            params: { id: notification?.data.courseId },
           });
         }
         break;
       case "enrollment":
-        if (notification.data?.studentId) {
+        if (notification?.data?.studentId) {
           router.push({
             pathname: "/instructor/student/[id]",
-            params: { id: notification.data.studentId },
+            params: { id: notification?.data.studentId },
           });
         }
         break;

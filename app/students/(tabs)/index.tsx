@@ -44,7 +44,7 @@ const HomeScreen = () => {
   const fetchCategories = async () => {
     try {
       const categories = await api.getUserCategories(userData?.id, userToken);
-      dispatch(getCategories(categories.data));
+      dispatch(getCategories(categories?.data));
     } catch (error) {
       console.error("Error fetching categories:", error);
     } finally {
@@ -56,12 +56,12 @@ const HomeScreen = () => {
     setLoadingCourses(true);
     try {
       const courses = await api.getAllCourses(userData?.id, userToken);
-      console.log(courses.data[0].instructor);
-      setCourses(courses.data);
+      console.log(courses?.data[0].instructor);
+      setCourses(courses?.data);
     } catch (error) {
       console.log(
         "Error fetching courses:",
-        (error as { response: { data: string } }).response.data
+        (error as { response: { data: string } }).response?.data
       );
       showAlert("error", "Failed to load courses. Please try again.");
     } finally {
@@ -145,27 +145,31 @@ const HomeScreen = () => {
         </View>
 
         {/* Most Popular Courses */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Explore Courses</Text>
+        {courses.length ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Explore Courses</Text>
+            </View>
+            {courses?.slice(0, 4).map((course: Course) => (
+              <CourseListItem
+                key={course.id}
+                title={course.name}
+                author={course?.instructor?.fullname}
+                price={course.price}
+                rating={+course.rating || 0}
+                reviews={+course.reviews || 0}
+                image={course.image_link}
+                isBestseller={course.isBestseller}
+                onPress={() => navigateToCourseDetails(course)}
+              />
+            ))}
             <TouchableOpacity onPress={() => router.push("/students/search")}>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
-          {courses?.slice(0, 14).map((course: Course) => (
-            <CourseListItem
-              key={course.id}
-              title={course.name}
-              author={course?.instructor?.fullname}
-              price={course.price}
-              rating={+course.rating || 0}
-              reviews={+course.reviews || 0}
-              image={course.image_link}
-              isBestseller={course.isBestseller}
-              onPress={() => navigateToCourseDetails(course)}
-            />
-          ))}
-        </View>
+        ) : (
+          <></>
+        )}
 
         {/* <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -221,6 +225,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#4169E1",
     fontWeight: "600",
+    marginTop: 10
   },
   noCoursesContainer: {
     flex: 1,

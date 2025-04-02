@@ -37,12 +37,12 @@ export default function SearchScreen() {
 
     try {
       const res = await api.searchCourses(query, token);
-      if (res.data?.length === 0) {
+      if (res?.data?.length === 0) {
         setSearchResults([]); // No results found
       } else {
-        dispatch(getSearchData(res.data));
+        dispatch(getSearchData(res?.data));
         dispatch(getSearchTerm(query));
-        setSearchResults(res.data);
+        setSearchResults(res?.data);
       }
     } catch (err: any) {
       console.error("Search failed:", err.response?.data || err);

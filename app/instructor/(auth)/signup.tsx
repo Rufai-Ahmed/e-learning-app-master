@@ -65,9 +65,9 @@ const SignUpScreen = () => {
         });
       }, 500);
     } catch (err: any) {
-      console.log(err.response.data);
-      if (err.response.data.message) {
-        showAlert("error", err.response.data.message);
+      console.log(err.response?.data);
+      if (err.response?.data.message) {
+        showAlert("error", err.response?.data.message);
       } else if (err.message) {
         showAlert("error", err.message);
       } else {

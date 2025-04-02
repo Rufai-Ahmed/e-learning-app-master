@@ -85,7 +85,7 @@ export const SessionHandler = ({ isDarkMode, setIsDarkMode }: any) => {
             else router.push("/instructor/(tabs)");
           }, 0);
         } catch (err) {
-          console.log((err as any).response.data);
+          console.log((err as any).response?.data);
           setTimeout(() => {
             dispatch(getUserInfo(null));
             router.push("/(auth)");

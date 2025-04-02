@@ -30,14 +30,14 @@ export default function SearchResultsScreen() {
 
     try {
       const res = await api.searchCourses(query, token);
-      if (res.data?.length === 0) {
+      if (res?.data?.length === 0) {
         dispatch(getSearchData([]));
       } else {
-        dispatch(getSearchData(res.data));
+        dispatch(getSearchData(res?.data));
         dispatch(getSearchTerm(query));
       }
     } catch (err) {
-      console.error("Search failed:", err.response.data);
+      console.error("Search failed:", err.response?.data);
       dispatch(getSearchData([]));
     } finally {
       setSearchLoading(false);

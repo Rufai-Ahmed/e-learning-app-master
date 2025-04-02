@@ -16,7 +16,7 @@ export const LearningOutcomes = () => {
   const fetchLearningOutcomes = async () => {
     try {
       const res = await api.getLearningObjectives(courseDetails?.id, token);
-      const modules = res.data || [];
+      const modules = res?.data || [];
 
       console.log(modules, "modules");
       // Extract lessons from modules

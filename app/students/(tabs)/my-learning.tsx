@@ -34,7 +34,7 @@ const LearnScreen = () => {
     setLoading(true);
     try {
       const response = await api.getUserCourses(userData?.id, userToken);
-      setCourses(response.data);
+      setCourses(response?.data);
     } catch (error) {
       console.error("Error fetching courses:", error);
       showAlert("error", "Failed to load courses. Please try again.");

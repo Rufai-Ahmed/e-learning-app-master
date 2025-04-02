@@ -17,8 +17,8 @@ export const Curriculum = () => {
   const fetchCourseModules = async () => {
     try {
       const res = await api.getLearningObjectives(courseDetails?.id, token);
-      console.log(res.data);
-      setModules(res.data || []);
+      console.log(res?.data);
+      setModules(res?.data || []);
     } catch (err) {
       console.log(err.response?.data || err.message);
     }

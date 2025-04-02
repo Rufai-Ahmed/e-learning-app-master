@@ -20,40 +20,46 @@ import { api } from "@/lib/actions/api";
 import { getUserInfo } from "@/lib/reducers/storeUserInfo";
 
 const ProfileSettingsScreen = () => {
-  const [profilePicture, setProfilePicture] = useState(
-    "https://placeimg.com/100/100/people"
-  );
-  const student = useAppSelector((state) => state.user.user);
   const { showAlert } = useAlert();
   const [loading, setLoading] = useState(false);
   const userToken = useAppSelector((state) => state.user.userLoginToken);
   const dispatch = useAppDispatch();
   const userData = useAppSelector((state) => state.user.user);
+  const [profilePicture, setProfilePicture] = useState(userData?.image_link);
+
+  const convertUriToBlob = async (uri: string): Promise<Blob> => {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    return blob;
+  };
 
   const handleUpdatePicture = async () => {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert(
-        "Permission required",
-        "Permission to access media library is needed to update your profile picture."
-      );
-      return;
-    }
-
-    // Open image picker
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
     });
 
-    // If the user cancels, do nothing
     if (pickerResult.canceled) return;
 
-    // Set the new profile picture URI
-    setProfilePicture(pickerResult.uri);
+    setProfilePicture(pickerResult.assets[0].uri);
+
+    try {
+      const fileUri = pickerResult.assets[0].uri;
+      const fileName = fileUri.split("/").pop() || "photo.jpg";
+      const fileType = fileUri.split(".").pop()?.toLowerCase() || "jpeg";
+
+      const blob = await convertUriToBlob(fileUri);
+
+      const formData = new FormData();
+      formData.append("image", blob, fileName);
+
+      const res = await api.uploadUserImage(userData?.id, userToken, formData);
+      dispatch(getUserInfo(res?.data));
+    } catch (error) {
+      console.error("Upload error:", error);
+    }
   };
 
   const handleLogout = async () => {
@@ -65,8 +71,8 @@ const ProfileSettingsScreen = () => {
       router.push("/");
     } catch (error) {
       console.error(error);
-      if (err.response.data.message) {
-        showAlert("error", err.response.data.message);
+      if (err.response?.data.message) {
+        showAlert("error", err.response?.data.message);
       } else if (err.message) {
         showAlert("error", err.message);
       } else {

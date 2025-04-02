@@ -1,146 +1,150 @@
-import { useState, useEffect, useRef } from "react"
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from "react-native"
-import { router, useLocalSearchParams } from "expo-router"
-import { LinearGradient } from "expo-linear-gradient"
-import { ArrowLeft } from "lucide-react-native"
-import { useAlert } from "@/hooks/useAlert"
-import Loader from "@/components/ui/Loader"
-import { api } from "@/lib/actions/api"
-import { useAppDispatch } from "@/hooks/useAppDispatch"
-import { getUserLoginToken } from "@/lib/reducers/storeUserInfo"
+import { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { ArrowLeft } from "lucide-react-native";
+import { useAlert } from "@/hooks/useAlert";
+import Loader from "@/components/ui/Loader";
+import { api } from "@/lib/actions/api";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { getUserLoginToken } from "@/lib/reducers/storeUserInfo";
 
 const VerifyEmailScreen = () => {
-  const params = useLocalSearchParams()
-  const {email, type} = params
-  const [otp, setOtp] = useState(["", "", "", "", "", ""])
-  const [timer, setTimer] = useState(30)
-  const [canResend, setCanResend] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const { showAlert } = useAlert()
-  const inputRefs = useRef<(TextInput | null)[]>([])
-  const dispatch = useAppDispatch()
+  const params = useLocalSearchParams();
+  const { email, type } = params;
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [timer, setTimer] = useState(30);
+  const [canResend, setCanResend] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { showAlert } = useAlert();
+  const inputRefs = useRef<(TextInput | null)[]>([]);
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     const interval = setInterval(() => {
       setTimer((prevTimer) => {
         if (prevTimer === 0) {
-          clearInterval(interval)
-          setCanResend(true)
-          return 0
+          clearInterval(interval);
+          setCanResend(true);
+          return 0;
         }
-        return prevTimer - 1
-      })
-    }, 1000)
+        return prevTimer - 1;
+      });
+    }, 1000);
 
-    return () => clearInterval(interval)
-  }, [])
+    return () => clearInterval(interval);
+  }, []);
 
-interface OtpChangeHandler {
+  interface OtpChangeHandler {
     (value: string, index: number): void;
-}
+  }
 
-const handleOtpChange: OtpChangeHandler = (value, index) => {
+  const handleOtpChange: OtpChangeHandler = (value, index) => {
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
     if (value !== "" && index < 5) {
-        inputRefs.current[index + 1]?.focus();
+      inputRefs.current[index + 1]?.focus();
     }
-};
+  };
 
   const handleResend = async () => {
-    try{
-      setLoading(true)
-    if (canResend) {
-      // Implement your resend OTP logic here
-      if(type === "signup"){
-      await api.sendVerificationEmail({email})
+    try {
+      setLoading(true);
+      if (canResend) {
+        // Implement your resend OTP logic here
+        if (type === "signup") {
+          await api.sendVerificationEmail({ email });
+        } else if (type === "reset-password") {
+          await api.sendForgotPwdVerificationEmail({ email });
+        }
+        showAlert("success", "Otp sent successfully!");
+        console.log("Resending OTP...");
+
+        setTimer(30);
+        setCanResend(false);
       }
-      else if(type === "reset-password"){
-       await api.sendForgotPwdVerificationEmail({email})
+    } catch (err) {
+      console.log(err);
+      if (err.response?.data.message) {
+        showAlert("error", err.response?.data.message);
+      } else if (err.message) {
+        showAler;
+        t("error", err.message);
+      } else {
+        showAlert("error", "Error re-sending otp. Try again");
       }
-      showAlert('success', 'Otp sent successfully!')
-      console.log("Resending OTP...")
-      
-      setTimer(30)
-      setCanResend(false)
+    } finally {
+      setLoading(false);
     }
-  }
-  catch(err){
-    console.log(err)
-    if(err.response.data.message){
-      showAlert('error', err.response.data.message)
-    }
-    else if(err.message){
-      showAler
-      t('error', err.message)
-    }
-    else {
-      showAlert('error', 'Error re-sending otp. Try again')
-    }
-  }
-  finally{
-    setLoading(false)
-  }
-  }
+  };
 
   const handleVerify = async () => {
-    setLoading(true)
-    const otpString = otp.join("")
+    setLoading(true);
+    const otpString = otp.join("");
     try {
-      console.log("Verifying OTP:", otpString)
+      console.log("Verifying OTP:", otpString);
 
       const body = {
         email,
-        code: otpString
-      }
+        code: otpString,
+      };
 
-      const res = await api.verifyEmail(body)
+      const res = await api.verifyEmail(body);
       // Implement your verification logic here
       // If successful:
 
-      console.log(res.data.token)
+      console.log(res?.data.token);
 
-      dispatch(getUserLoginToken(res.data.token))
-    
-      showAlert('success', 'OTP verified successfully')
-   
+      dispatch(getUserLoginToken(res?.data.token));
+
+      showAlert("success", "OTP verified successfully");
+
       setTimeout(() => {
-        if(type === "reset-password"){
-           router.push({
-             pathname:"/instructor/(auth)/reset-password",
-             params: body
-           }
-             )
-        }
-        else if(type === "signup"){
-      router.push("/instructor/(auth)/login")
+        if (type === "reset-password") {
+          router.push({
+            pathname: "/instructor/(auth)/reset-password",
+            params: body,
+          });
+        } else if (type === "signup") {
+          router.push("/instructor/(auth)/login");
         }
       }, 500);
     } catch (error) {
-
-      console.error(error)
-      if(error.response.data.message){
-        showAlert('error', error.response.data.message)
-      }
-      else if(error.message){
-        showAlert('error', error.message)
-      }
-      else {
-        showAlert('error', 'Failed to verify OTP. Please try again.')
+      console.error(error);
+      if (error.response?.data.message) {
+        showAlert("error", error.response?.data.message);
+      } else if (error.message) {
+        showAlert("error", error.message);
+      } else {
+        showAlert("error", "Failed to verify OTP. Please try again.");
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <>
       {loading && <Loader />}
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+      >
         <LinearGradient colors={["#4169E1", "#6495ED"]} style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
             <ArrowLeft color="#FFFFFF" size={24} />
           </TouchableOpacity>
           <Text style={styles.title}>Verify Your Email</Text>
@@ -148,7 +152,8 @@ const handleOtpChange: OtpChangeHandler = (value, index) => {
 
         <View style={styles.content}>
           <Text style={styles.subtitle}>
-            We've sent a 6-digit code to {email}. Enter the code below to confirm your email address.
+            We've sent a 6-digit code to {email}. Enter the code below to
+            confirm your email address.
           </Text>
           <View style={styles.otpContainer}>
             {otp.map((digit, index) => (
@@ -163,11 +168,19 @@ const handleOtpChange: OtpChangeHandler = (value, index) => {
             ))}
           </View>
           <TouchableOpacity
-            style={[styles.resendButton, !canResend && styles.resendButtonDisabled]}
+            style={[
+              styles.resendButton,
+              !canResend && styles.resendButtonDisabled,
+            ]}
             onPress={handleResend}
             disabled={!canResend}
           >
-            <Text style={[styles.resendText, !canResend && styles.resendTextDisabled]}>
+            <Text
+              style={[
+                styles.resendText,
+                !canResend && styles.resendTextDisabled,
+              ]}
+            >
               {canResend ? "Resend Code" : `Resend in ${timer}s`}
             </Text>
           </TouchableOpacity>
@@ -177,8 +190,8 @@ const handleOtpChange: OtpChangeHandler = (value, index) => {
         </View>
       </KeyboardAvoidingView>
     </>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -257,7 +270,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-})
+});
 
-export default VerifyEmailScreen
-
+export default VerifyEmailScreen;

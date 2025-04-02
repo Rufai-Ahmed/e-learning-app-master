@@ -20,14 +20,14 @@ export const CourseHeader = () => {
       router.push({
         pathname: "/webview",
         params: {
-          uri: res.data.link,
+          uri: res?.data.link,
         },
       });
 
-      console.log(res.data);
+      console.log(res?.data);
       //   router.push('/students/course-learning-details'
     } catch (err) {
-      console.log(err.response.data);
+      console.log(err.response?.data);
     } finally {
       setLoading(false);
     }

@@ -56,7 +56,7 @@ export default function ManageCoursesScreen() {
       setLoading(true);
       const res = await api.getInstructorCourses(userData?.id, userToken);
 
-      dispatch(getInstructorCourses(res.data));
+      dispatch(getInstructorCourses(res?.data));
     } catch (err) {
       console.log(err);
     } finally {
@@ -94,7 +94,7 @@ export default function ManageCoursesScreen() {
           !== courseId)));*/
                 showAlert("success", "Course deleted successfully");
               } catch (err) {
-                console.log(err.response.data);
+                console.log(err.response?.data);
               } finally {
                 setLoading(false);
               }
@@ -103,7 +103,7 @@ export default function ManageCoursesScreen() {
         ]
       );
     } catch (error) {
-      console.log(error.response.data);
+      console.log(error.response?.data);
       showAlert("error", "Failed to delete course");
     } finally {
       setLoading(false);
@@ -132,7 +132,7 @@ export default function ManageCoursesScreen() {
         )));*/
         showAlert("success", "Course updated successfully");
       } catch (error) {
-        console.log(error.response.data);
+        console.log(error.response?.data);
         showAlert("error", "Failed to update course");
       } finally {
         setLoading(false);
