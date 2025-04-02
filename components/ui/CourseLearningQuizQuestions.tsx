@@ -69,7 +69,7 @@ export default function QuizQuestionScreen({ route, navigation }) {
         <TouchableOpacity
           style={[styles.navButton, styles.nextButton]}
           onPress={() => {
-            if (questionNumber < questions.length) {
+            if (questionNumber < questions?.length) {
               navigation.navigate('QuizQuestion', { 
                 questionNumber: questionNumber + 1 
               });

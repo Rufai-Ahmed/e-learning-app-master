@@ -1,50 +1,45 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { router } from "expo-router"
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { StarRating } from "./StarRating"
-import {useState} from "react"
-import {api} from "@/lib/actions/api"
+import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useAppSelector } from "@/hooks/useAppSelector";
+import { StarRating } from "./StarRating";
+import { useState } from "react";
+import { api } from "@/lib/actions/api";
 export const CourseHeader = () => {
-  const courseDetails = useAppSelector(state => state.courses.courseDetails)
-  const [loading, setLoading] = useState(false)
-  const userData = useAppSelector(state => state.user.user)
-  const token = useAppSelector(state => state.user.userLoginToken)
+  const courseDetails = useAppSelector((state) => state.courses.courseDetails);
+  const [loading, setLoading] = useState(false);
+  const userData = useAppSelector((state) => state.user.user);
+  const token = useAppSelector((state) => state.user.userLoginToken);
 
-  
   const buyCourse = async () => {
-    try{
-      setLoading(true)
-      
-      const res = await api.buyCourse(courseDetails?.id, token)
-      
+    try {
+      setLoading(true);
+
+      const res = await api.buyCourse(courseDetails?.id, token);
 
       router.push({
-        pathname:'/webview',
+        pathname: "/webview",
         params: {
-          uri: res.data.link
-        }
-      })
+          uri: res.data.link,
+        },
+      });
 
-      console.log(res.data)
-   //   router.push('/students/course-learning-details'
+      console.log(res.data);
+      //   router.push('/students/course-learning-details'
+    } catch (err) {
+      console.log(err.response.data);
+    } finally {
+      setLoading(false);
     }
-    catch(err){
-      console.log(err.response.data)
-    }
-    finally{
-      setLoading(false)
-    }
-  }
-  
+  };
+
   return (
-    
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-      {/*  <View style={styles.headerRight}>
+        {/*  <View style={styles.headerRight}>
           <TouchableOpacity>
             <Ionicons name="share-outline" size={24} color="#fff" />
           </TouchableOpacity>
@@ -57,7 +52,7 @@ export const CourseHeader = () => {
       <View style={styles.preview}>
         <Image
           source={{
-            uri: courseDetails?.image_link
+            uri: courseDetails?.image_link,
           }}
           style={styles.previewImage}
         />
@@ -65,26 +60,28 @@ export const CourseHeader = () => {
 
       <View style={styles.courseInfo}>
         <Text style={styles.title}>{courseDetails?.name}</Text>
-        <Text style={styles.subtitle}>
-          {courseDetails?.description}
-        </Text>
+        <Text style={styles.subtitle}>{courseDetails?.description}</Text>
 
-
-          <StarRating rating={courseDetails?.average_rating || 0} size={14} />
+        <StarRating rating={courseDetails?.average_rating || 0} size={14} />
 
         <View style={styles.meta}>
-          <Text style={styles.metaText}>Created by {courseDetails?.instructor.fullname}</Text>
-          <Text style={styles.metaText}>Last updated {courseDetails?.updated_at}</Text>
-
+          <Text style={styles.metaText}>
+            Created by {courseDetails?.instructor?.fullname}
+          </Text>
+          <Text style={styles.metaText}>
+            Last updated {courseDetails?.updated_at}
+          </Text>
         </View>
 
         <Text style={styles.price}>NGN {courseDetails?.price}</Text>
 
         <TouchableOpacity onPress={buyCourse} style={styles.buyButton}>
-          <Text style={styles.buyButtonText}>{loading ? "Loading...":"Buy now"}</Text>
+          <Text style={styles.buyButtonText}>
+            {loading ? "Loading..." : "Buy now"}
+          </Text>
         </TouchableOpacity>
 
-       {/* <View style={styles.actions}>
+        {/* <View style={styles.actions}>
           <TouchableOpacity style={styles.secondaryButton}>
             <Text style={styles.secondaryButtonText}>Add to cart</Text>
           </TouchableOpacity>
@@ -94,21 +91,19 @@ export const CourseHeader = () => {
         </View>*/}
       </View>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#fff",
-  
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     padding: 16,
     alignItems: "center",
-    backgroundColor: "#4169E1", 
-    
+    backgroundColor: "#4169E1",
   },
   headerRight: {
     flexDirection: "row",
@@ -197,5 +192,4 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
   },
-})
-
+});

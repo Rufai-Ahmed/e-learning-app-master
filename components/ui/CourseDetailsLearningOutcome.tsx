@@ -18,15 +18,14 @@ export const LearningOutcomes = () => {
       const res = await api.getLearningObjectives(courseDetails?.id, token);
       const modules = res.data || [];
 
-      console.log(modules,'modules')
+      console.log(modules, "modules");
       // Extract lessons from modules
       const lessons = modules
         .map((module) => module.lessons)
         .filter((lesson) => Array.isArray(lesson)) // Ensure it's an array
         .flat(); // Flatten in case lessons are nested
 
-
-      setOutComes(lessons.length > 0 ? lessons : ["No lessons available"]);
+      setOutComes(lessons?.length > 0 ? lessons : ["No lessons available"]);
     } catch (err) {
       console.log(err.response?.data || err.message);
     }

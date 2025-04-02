@@ -1,39 +1,26 @@
-import { CourseHeader } from "@/components/ui/CourseDetailHeader"
-import { Curriculum } from "@/components/ui/CourseDetailsCurriculum"
-import { CourseFeatures } from "@/components/ui/CourseDetailsFeatures"
-import { InstructorProfile } from "@/components/ui/CourseDetailsInstructor"
-import { LearningOutcomes } from "@/components/ui/CourseDetailsLearningOutcome"
-import { RatingsSection } from "@/components/ui/CourseDetailsRatings"
-import { RecommendedCourses } from "@/components/ui/CourseDetailsRecommended"
-import { ScrollView, StyleSheet, StatusBar } from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { api } from '@/lib/actions/api';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { getCategories, getCourseDetails, getCourses } from '@/lib/reducers/storeUserCourses';
-import { useAlert } from "@/hooks/useAlert";
-
+import { CourseHeader } from "@/components/ui/CourseDetailHeader";
+import { Curriculum } from "@/components/ui/CourseDetailsCurriculum";
+import { InstructorProfile } from "@/components/ui/CourseDetailsInstructor";
+import { LearningOutcomes } from "@/components/ui/CourseDetailsLearningOutcome";
+import { RatingsSection } from "@/components/ui/CourseDetailsRatings";
+import { ScrollView, StatusBar, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function App() {
-  
-
-  
-  
-  
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
       <ScrollView>
         <CourseHeader />
         <LearningOutcomes />
-      {/*  <CourseFeatures />*/}
+        {/*  <CourseFeatures />*/}
         <Curriculum />
-        <InstructorProfile/>
-        <RatingsSection/>
-       {/* <RecommendedCourses/>*/}
+        <InstructorProfile />
+        <RatingsSection />
+        {/* <RecommendedCourses/>*/}
       </ScrollView>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -41,5 +28,4 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#000",
   },
-})
-
+});

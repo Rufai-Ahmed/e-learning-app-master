@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, BackHandler } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, BackHandler, Platform } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,82 +15,101 @@ const DepositWebView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const params = useLocalSearchParams();
 
-
-  console.log(params)
   useFocusEffect(
     useCallback(() => {
-    let backhandler;
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+        router.push('/students/(tabs)');
+        return true;
+      });
 
-    backhandler = BackHandler.addEventListener('hardwareBackPress', ()=> {
-        router.push('/students/(tabs)')
-
-        return true
-    })
-
-    return () => {
-        backhandler.remove()
-    }
+      return () => {
+        backHandler.remove();
+      };
     }, [])
-  )
+  );
 
-  const handleNavigationStateChange = (navState: any) => {
-    // Handle navigation state changes
-    // You can check for success/failure URLs here
+  const handleNavigationStateChange = (navState) => {
     const { url } = navState;
-    
     if (url.includes('payment-success')) {
-      // Handle successful payment
       router.push('/transaction-status/success');
     } else if (url.includes('payment-failed')) {
-      // Handle failed payment
       router.push('/transaction-status/failed');
     }
   };
 
-  return (
-    <View style={styles.container}>
-      <Stack.Screen
-        options={{
-          title: 'Pay for Course',
-          headerStyle: {
-            backgroundColor: colors.background,
-          },
-          headerShadowVisible: false,
-          headerLeft: () => (
-            <Ionicons
-              name="close"
-              size={24}
-              color={colors.primary}
-              onPress={() => router.back()}
-              style={styles.closeButton}
-            />
-          ),
-        }}
-      />
-
-      <WebView
-        source={{ uri: params?.uri }}
-        style={styles.webview}
-        onLoadStart={() => setIsLoading(true)}
-        onLoadEnd={() => setIsLoading(false)}
-        onNavigationStateChange={handleNavigationStateChange}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        startInLoadingState={true}
-        renderLoading={() => (
-          <View style={styles.loadingContainer}>
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen
+          options={{
+            title: 'Pay for Course',
+            headerStyle: { backgroundColor: colors.background },
+            headerShadowVisible: false,
+            headerLeft: () => (
+              <Ionicons
+                name="close"
+                size={24}
+                color={colors.primary}
+                onPress={() => router.back()}
+                style={styles.closeButton}
+              />
+            ),
+          }}
+        />
+        <iframe
+          src={params?.uri as string}
+          style={styles.webview}
+          onLoad={() => setIsLoading(false)}
+        />
+        {isLoading && (
+          <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         )}
-      />
-
-      {isLoading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      )}
-    </View>
-  );
+      </View>
+    );
+  } else {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen
+          options={{
+            title: 'Pay for Course',
+            headerStyle: { backgroundColor: colors.background },
+            headerShadowVisible: false,
+            headerLeft: () => (
+              <Ionicons
+                name="close"
+                size={24}
+                color={colors.primary}
+                onPress={() => router.back()}
+                style={styles.closeButton}
+              />
+            ),
+          }}
+        />
+        <WebView
+          source={{ uri: params?.uri }}
+          style={styles.webview}
+          onLoadStart={() => setIsLoading(true)}
+          onLoadEnd={() => setIsLoading(false)}
+          onNavigationStateChange={handleNavigationStateChange}
+          javaScriptEnabled
+          domStorageEnabled
+          startInLoadingState
+          renderLoading={() => (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          )}
+        />
+        {isLoading && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        )}
+      </View>
+    );
+  }
 };
 
 const styles = StyleSheet.create({
@@ -100,6 +119,7 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
+    borderWidth: 0,
   },
   loadingContainer: {
     position: 'absolute',
@@ -122,4 +142,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DepositWebView; 
+export default DepositWebView;

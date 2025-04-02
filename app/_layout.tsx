@@ -4,22 +4,22 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack, useRouter } from "expo-router";
+import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
 
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { useAppSelector } from "@/hooks/useAppSelector";
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { getThemeData } from "@/lib/reducers/storeThemeData";
-import { axios } from "@/lib/axios";
-import { getUserInfo } from "@/lib/reducers/storeUserInfo";
 import { AlertProvider } from "@/context/AlertContext";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { api } from "@/lib/actions/api";
+import { getThemeData } from "@/lib/reducers/storeThemeData";
+import { getUserInfo } from "@/lib/reducers/storeUserInfo";
+import { persistor, store } from "@/lib/store";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { store } from "@/lib/store";
 import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -31,7 +31,6 @@ export default function RootLayout() {
   });
 
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [layoutReady, setLayoutReady] = useState(false);
 
   useEffect(() => {
     if (loaded) {
@@ -45,68 +44,62 @@ export default function RootLayout() {
 
   return (
     <Provider store={store}>
-      <AlertProvider>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <ThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
-            <SessionHandler
-              isDarkMode={isDarkMode}
-              setIsDarkMode={setIsDarkMode}
-              layoutReady={layoutReady}
-            />
-          </ThemeProvider>
-        </GestureHandlerRootView>
-      </AlertProvider>
+      <PersistGate loading={null} persistor={persistor}>
+        <AlertProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <ThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
+              <SessionHandler
+                isDarkMode={isDarkMode}
+                setIsDarkMode={setIsDarkMode}
+              />
+            </ThemeProvider>
+          </GestureHandlerRootView>
+        </AlertProvider>
+      </PersistGate>
     </Provider>
   );
 }
 
-const SessionHandler = ({ isDarkMode, setIsDarkMode, layoutReady }: any) => {
+export const SessionHandler = ({ isDarkMode, setIsDarkMode }: any) => {
   const dispatch = useAppDispatch();
   const theme = useAppSelector((state) => state.theme.themeData);
   const userData = useAppSelector((state) => state.user.user);
   const userToken = useAppSelector((state) => state.user.userLoginToken);
-  const router = useRouter();
 
-  if (layoutReady) {
-    useEffect(() => {
-      // router.push('/(auth)/splash')
+  useEffect(() => {
+    dispatch(getThemeData(theme));
+    setIsDarkMode(theme);
 
-      dispatch(getThemeData(theme));
-      setIsDarkMode(theme);
+    if (userData === null) router.push("/(auth)");
 
-      if (userData) {
-        const date = Date.now();
+    if (userData) {
+      const getUserCurrentSession = async () => {
+        try {
+          await api.getUserCategories(userData?.id, userToken);
 
-        const getUserCurrentSession = async () => {
-          try {
-            const response = await axios.get(`/user/session`, {
-              headers: {
-                Authorization: userToken,
-              },
-            });
+          const userRole = userData?.roles.map(
+            (e: { name: string }) => e.name
+          )?.[0] as "student" | "instructor";
+          setTimeout(() => {
+            if (userRole === "student") router.push("/students/(tabs)");
+            else router.push("/instructor/(tabs)");
+          }, 0);
+        } catch (err) {
+          console.log((err as any).response.data);
+          setTimeout(() => {
+            dispatch(getUserInfo(null));
+            router.push("/(auth)");
+          });
+        }
+      };
 
-            console.log(response.data, "user session");
-
-            router.push("/(tabs)");
-          } catch (err) {
-            console.log((err as any).response.data);
-
-            if ((err as any).response.data.message) {
-              dispatch(getUserInfo(null));
-
-              router.push("/(auth)");
-            } else {
-              router.push("/(auth)");
-            }
-          }
-        };
-
-        getUserCurrentSession();
-      } else {
+      getUserCurrentSession();
+    } else {
+      setTimeout(() => {
         router.push("/(auth)");
-      }
-    }, [isDarkMode, dispatch, theme]);
-  }
+      });
+    }
+  }, [isDarkMode, dispatch, theme, userData, userToken, router, setIsDarkMode]);
 
   return (
     <Stack>

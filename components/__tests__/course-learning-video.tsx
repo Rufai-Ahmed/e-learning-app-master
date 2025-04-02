@@ -79,7 +79,7 @@
 //   const onSpeechResultsHandler = (e: any) => {
 //     // When speech results come in, update the transcript state.
 //     // Use the current video position for a timestamp.
-//     if (e.value && e.value.length > 0) {
+//     if (e.value && e.value?.length > 0) {
 //       setTranscript((prev) => [
 //         ...prev,
 //         { time: formatTime(status.positionMillis), text: e.value[0] },
@@ -90,9 +90,6 @@
 //   const onSpeechErrorHandler = (e: any) => {
 //     console.error("Speech recognition error:", e);
 //   };
-
-
-
 
 //   const handleBackPress = async () => {
 //     // If in custom fullscreen, exit fullscreen on back press.
@@ -211,7 +208,6 @@
 //     router.back();
 //   };
 
-
 //   return (
 //     <SafeAreaView style={styles.container}>
 //       <StatusBar style="dark" />
@@ -282,7 +278,7 @@
 //                   />
 //                 </TouchableOpacity>
 //                 */}
-      
+
 //                 <TouchableOpacity style={styles.iconButton} onPress={() => setShowSettings(true)}>
 //                   <MaterialIcons name="settings" size={24} color="white" />
 //                 </TouchableOpacity>

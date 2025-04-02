@@ -1,26 +1,42 @@
-import React, { useRef, useState } from "react"
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, FlatList, Animated, type ViewToken } from "react-native"
-import { Book, Video, BookDashed } from "lucide-react-native"
-import { router } from "expo-router"
+import React, { useRef, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  FlatList,
+  Animated,
+  type ViewToken,
+} from "react-native";
+import { Book, Video, BookDashed } from "lucide-react-native";
+import { router } from "expo-router";
 
-const { width } = Dimensions.get("window")
-const ITEM_WIDTH = width
+const { width } = Dimensions.get("window");
+const ITEM_WIDTH = width;
 
-const WelcomeScreenl = () => {
-  const [currentIndex, setCurrentIndex] = useState(0)
+const WelcomeScreen = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 50,
     minimumViewTime: 300,
-  }).current
+  }).current;
 
-  const slideRef = useRef<FlatList<{ id: string; title: string; subtitle: string; icon: JSX.Element }> | null>(null)
-  const scrollX = useRef(new Animated.Value(0)).current
+  const slideRef = useRef<FlatList<{
+    id: string;
+    title: string;
+    subtitle: string;
+    icon: JSX.Element;
+  }> | null>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
-    if (viewableItems[0]) {
-      setCurrentIndex(viewableItems[0].index || 0)
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      if (viewableItems[0]) {
+        setCurrentIndex(viewableItems[0].index || 0);
+      }
     }
-  }).current
+  ).current;
 
   const slides = [
     {
@@ -41,35 +57,39 @@ const WelcomeScreenl = () => {
       subtitle: "Earn recognized certificates",
       icon: <BookDashed size={80} color="#4169E1" />,
     },
-  ]
+  ];
 
-  const renderItem = ({ item }: { item: { id: string; title: string; subtitle: string; icon: JSX.Element } }) => {
+  const renderItem = ({
+    item,
+  }: {
+    item: { id: string; title: string; subtitle: string; icon: JSX.Element };
+  }) => {
     return (
       <View style={[styles.slideContainer, { width: ITEM_WIDTH }]}>
         <View style={styles.iconContainer}>{item.icon}</View>
         <Text style={styles.slideTitle}>{item.title}</Text>
         <Text style={styles.slideSubtitle}>{item.subtitle}</Text>
       </View>
-    )
-  }
+    );
+  };
 
   const renderPagination = () => {
     return (
       <View style={styles.paginationContainer}>
         {slides.map((_, i) => {
-          const inputRange = [(i - 1) * width, i * width, (i + 1) * width]
+          const inputRange = [(i - 1) * width, i * width, (i + 1) * width];
 
           const dotWidth = scrollX.interpolate({
             inputRange,
             outputRange: [8, 16, 8],
             extrapolate: "clamp",
-          })
+          });
 
           const opacity = scrollX.interpolate({
             inputRange,
             outputRange: [0.3, 1, 0.3],
             extrapolate: "clamp",
-          })
+          });
 
           return (
             <Animated.View
@@ -82,30 +102,30 @@ const WelcomeScreenl = () => {
                 },
               ]}
             />
-          )
+          );
         })}
       </View>
-    )
-  }
+    );
+  };
 
   // Auto scroll functionality
   React.useEffect(() => {
     const timer = setInterval(() => {
-      if (currentIndex < slides.length - 1) {
+      if (currentIndex < slides?.length - 1) {
         slideRef.current?.scrollToIndex({
           index: currentIndex + 1,
           animated: true,
-        })
+        });
       } else {
         slideRef.current?.scrollToIndex({
           index: 0,
           animated: true,
-        })
+        });
       }
-    }, 3000)
+    }, 3000);
 
-    return () => clearInterval(timer)
-  }, [currentIndex])
+    return () => clearInterval(timer);
+  }, [currentIndex]);
 
   return (
     <View style={styles.container}>
@@ -117,7 +137,10 @@ const WelcomeScreenl = () => {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: false })}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: false }
+        )}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
       />
@@ -125,17 +148,25 @@ const WelcomeScreenl = () => {
       {renderPagination()}
 
       <View style={styles.bottomContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => router.navigate("/(auth)/role-selection")}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.navigate("/(auth)/role-selection")}
+        >
           <Text style={styles.buttonText}>Get Started</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => router.navigate("/(auth)/role-selection")}>
-          <Text style={styles.secondaryButtonText}>I already have an account</Text>
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => router.navigate("/(auth)/role-selection")}
+        >
+          <Text style={styles.secondaryButtonText}>
+            I already have an account
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -205,7 +236,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
   },
-})
+});
 
-export default WelcomeScreenl
-
+export default WelcomeScreen;

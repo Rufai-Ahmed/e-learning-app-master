@@ -31,15 +31,25 @@ export const Curriculum = () => {
         <Text style={styles.subtitle}>Modules</Text>
       </View>
 
-      {modules.length > 0 ? (
+      {modules?.length > 0 ? (
         modules.map((module, index) => (
           <View key={module.id} style={styles.weekContainer}>
             <TouchableOpacity
               style={styles.weekHeader}
-              onPress={() => setExpandedModule(expandedModule === index ? null : index)}
+              onPress={() =>
+                setExpandedModule(expandedModule === index ? null : index)
+              }
             >
               <View style={styles.weekTitle}>
-                <Ionicons name={expandedModule === index ? "chevron-down" : "chevron-forward"} size={24} color="#4169E1" />
+                <Ionicons
+                  name={
+                    expandedModule === index
+                      ? "chevron-down"
+                      : "chevron-forward"
+                  }
+                  size={24}
+                  color="#4169E1"
+                />
                 <Text style={styles.weekTitleText}>{module.title}</Text>
               </View>
             </TouchableOpacity>

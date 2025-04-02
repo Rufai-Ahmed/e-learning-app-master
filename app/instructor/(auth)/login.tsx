@@ -32,7 +32,7 @@ const LoginScreen = () => {
       const { password, email} = data
 
       const body = {
-        email,
+        email: email.toLowerCase().trim(),
         password
       }
 
@@ -145,7 +145,7 @@ const LoginScreen = () => {
 
         <TouchableOpacity
           style={styles.socialAuthButton}
-          onPress={() => router.navigate('/(auth)/students/social-auth')}
+          onPress={() => router.navigate('/instructor/(auth)/social-auth')}
         >
           <Text style={styles.socialAuthText}>More Sign In Options</Text>
         </TouchableOpacity>

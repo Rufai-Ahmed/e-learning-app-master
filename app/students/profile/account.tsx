@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,9 +8,9 @@ import {
   ScrollView,
   Image,
   Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import {
   ArrowLeft,
   Camera,
@@ -20,8 +20,8 @@ import {
   BookOpen,
   Save,
   GraduationCap,
-} from 'lucide-react-native';
-import { useAppSelector } from '@/hooks/useAppSelector';
+} from "lucide-react-native";
+import { useAppSelector } from "@/hooks/useAppSelector";
 
 type AccountDetails = {
   name: string;
@@ -35,24 +35,24 @@ type AccountDetails = {
 };
 
 const dummyAccount: AccountDetails = {
-  name: 'John Smith',
-  email: 'john.smith@example.com',
-  phone: '+234 123 456 7890',
-  website: 'www.johnsmith.com',
-  bio: 'Passionate learner interested in web development and mobile app development.',
-  interests: ['Web Development', 'Mobile Apps', 'UI/UX Design'],
-  education: 'Computer Science Student',
+  name: "John Smith",
+  email: "john.smith@example.com",
+  phone: "+234 123 456 7890",
+  website: "www.johnsmith.com",
+  bio: "Passionate learner interested in web development and mobile app development.",
+  interests: ["Web Development", "Mobile Apps", "UI/UX Design"],
+  education: "Computer Science Student",
   avatar: null,
 };
 
 export default function AccountScreen() {
   const [account, setAccount] = useState<AccountDetails>(dummyAccount);
   const [isEditing, setIsEditing] = useState(false);
-  const userData = useAppSelector(state => state.user.user)
+  const userData = useAppSelector((state) => state.user.user);
 
   const handleSave = () => {
     // Implement save logic here
-    Alert.alert('Success', 'Profile updated successfully');
+    Alert.alert("Success", "Profile updated successfully");
     setIsEditing(false);
   };
 
@@ -82,13 +82,16 @@ export default function AccountScreen() {
 
       <ScrollView style={styles.content}>
         <View style={styles.photoSection}>
-          <View style={styles.avatarContainer}>
-            {account.avatar ? (
-              <Image source={{ uri: account.avatar }} style={styles.avatar} />
+          <View style={styles?.avatarContainer}>
+            {account?.avatar ? (
+              <Image source={{ uri: account?.avatar }} style={styles?.avatar} />
             ) : (
-              <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                <Text style={styles.avatarText}>
-                  {userData?.fullname.split(' ').map(n => n[0]).join('')}
+              <View style={[styles?.avatar, styles?.avatarPlaceholder]}>
+                <Text style={styles?.avatarText}>
+                  {userData?.fullname
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
                 </Text>
               </View>
             )}
@@ -127,7 +130,7 @@ export default function AccountScreen() {
               />
             </View>
           </View>
-{/* 
+          {/* 
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Education</Text>
@@ -141,7 +144,7 @@ export default function AccountScreen() {
               />
             </View>
           </View> */}
-{/* 
+          {/* 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Website</Text>
             <View style={styles.inputWithIcon}>
@@ -160,10 +163,7 @@ export default function AccountScreen() {
 
       {isEditing && (
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.saveButton}
-            onPress={handleSave}
-          >
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Save size={20} color="white" />
             <Text style={styles.saveButtonText}>Save Changes</Text>
           </TouchableOpacity>
@@ -176,43 +176,43 @@ export default function AccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F9FC',
+    backgroundColor: "#F7F9FC",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
   },
   editButton: {
     padding: 8,
   },
   editButtonText: {
     fontSize: 16,
-    color: '#4169E1',
-    fontWeight: '600',
+    color: "#4169E1",
+    fontWeight: "600",
   },
   content: {
     flex: 1,
   },
   photoSection: {
-    alignItems: 'center',
+    alignItems: "center",
     padding: 24,
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   avatarContainer: {
-    position: 'relative',
+    position: "relative",
   },
   avatar: {
     width: 120,
@@ -220,26 +220,26 @@ const styles = StyleSheet.create({
     borderRadius: 60,
   },
   avatarPlaceholder: {
-    backgroundColor: '#EBF2FF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#EBF2FF",
+    alignItems: "center",
+    justifyContent: "center",
   },
   avatarText: {
     fontSize: 48,
-    fontWeight: '600',
-    color: '#4169E1',
+    fontWeight: "600",
+    color: "#4169E1",
   },
   changePhotoButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     right: 0,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 20,
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -256,48 +256,48 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
+    fontWeight: "600",
+    color: "#666",
     marginBottom: 8,
   },
   input: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#333',
+    color: "#333",
     flex: 1,
   },
   inputDisabled: {
-    backgroundColor: '#f8f9fa',
-    color: '#666',
+    backgroundColor: "#f8f9fa",
+    color: "#666",
   },
   inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
     borderRadius: 8,
     paddingHorizontal: 16,
     gap: 12,
   },
   textArea: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 8,
     padding: 16,
     fontSize: 16,
-    color: '#333',
+    color: "#333",
     height: 120,
   },
   interestsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   interestTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EBF2FF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EBF2FF",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
@@ -305,27 +305,27 @@ const styles = StyleSheet.create({
   },
   interestText: {
     fontSize: 14,
-    color: '#4169E1',
-    fontWeight: '500',
+    color: "#4169E1",
+    fontWeight: "500",
   },
   footer: {
     padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: "#f0f0f0",
   },
   saveButton: {
-    backgroundColor: '#4169E1',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#4169E1",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 16,
     borderRadius: 8,
     gap: 8,
   },
   saveButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
-}); 
+});

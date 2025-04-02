@@ -1,49 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Check } from 'lucide-react-native';
-import { router } from 'expo-router';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Check } from "lucide-react-native";
+import { router } from "expo-router";
 
 const categories = [
-  { id: 1, name: 'Web Development', icon: '🌐' },
-  { id: 2, name: 'Mobile App Development', icon: '📱' },
-  { id: 3, name: 'Data Science', icon: '📊' },
-  { id: 4, name: 'Machine Learning', icon: '🤖' },
-  { id: 5, name: 'Cloud Computing', icon: '☁️' },
-  { id: 6, name: 'Cybersecurity', icon: '🔒' },
-  { id: 7, name: 'UI/UX Design', icon: '🎨' },
-  { id: 8, name: 'Blockchain', icon: '🔗' },
-  { id: 9, name: 'DevOps', icon: '🔧' },
-  { id: 10, name: 'Internet of Things', icon: '🏠' },
+  { id: 1, name: "Web Development", icon: "🌐" },
+  { id: 2, name: "Mobile App Development", icon: "📱" },
+  { id: 3, name: "Data Science", icon: "📊" },
+  { id: 4, name: "Machine Learning", icon: "🤖" },
+  { id: 5, name: "Cloud Computing", icon: "☁️" },
+  { id: 6, name: "Cybersecurity", icon: "🔒" },
+  { id: 7, name: "UI/UX Design", icon: "🎨" },
+  { id: 8, name: "Blockchain", icon: "🔗" },
+  { id: 9, name: "DevOps", icon: "🔧" },
+  { id: 10, name: "Internet of Things", icon: "🏠" },
 ];
 
 const CategorySelectionScreen = () => {
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
 
   const toggleCategory = (categoryId: number) => {
-    setSelectedCategories((prev) =>
-      prev.includes(categoryId)
-        ? prev.filter((id) => id !== categoryId)
-        : [...prev, categoryId]
-    );
+    setSelectedCategories((prev) => {
+      // If already selected, deselect it.
+      if (prev.includes(categoryId)) {
+        return prev.filter((id) => id !== categoryId);
+      } else {
+        // If not selected and already five, don't add another.
+        if (prev.length >= 5) {
+          // Optionally, show an alert here
+          Alert.alert("Selection Limit", "You can only select up to 5 categories.");
+          return prev;
+        }
+        return [...prev, categoryId];
+      }
+    });
   };
 
   const handleProceed = () => {
     if (selectedCategories.length >= 5) {
-      console.log('Selected categories:', selectedCategories);
+      console.log("Selected categories:", selectedCategories);
       // Navigate to the next screen or perform any other action
-      router.push('/students/(tabs)'); // Replace with your actual route
+      router.push("/instructor/(tabs)"); // Replace with your actual route
     }
   };
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#4169E1', '#6495ED']}
-        style={styles.header}
-      >
+      <LinearGradient colors={["#4169E1", "#6495ED"]} style={styles.header}>
         <Text style={styles.title}>Choose Your Interests</Text>
-        <Text style={styles.subtitle}>Select at least 5 topics to personalize your experience</Text>
+        <Text style={styles.subtitle}>
+          Select at least 5 topics to personalize your experience
+        </Text>
       </LinearGradient>
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
@@ -53,7 +68,8 @@ const CategorySelectionScreen = () => {
               key={category.id}
               style={[
                 styles.categoryItem,
-                selectedCategories.includes(category.id) && styles.selectedCategory,
+                selectedCategories.includes(category.id) &&
+                  styles.selectedCategory,
               ]}
               onPress={() => toggleCategory(category.id)}
             >
@@ -91,7 +107,7 @@ const CategorySelectionScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   header: {
     padding: 20,
@@ -101,13 +117,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     opacity: 0.8,
   },
   content: {
@@ -115,23 +131,23 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
   categoryItem: {
-    width: '48%',
+    width: "48%",
     aspectRatio: 1,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: "#F0F0F0",
     borderRadius: 20,
     padding: 16,
     marginBottom: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 3,
   },
   selectedCategory: {
-    backgroundColor: '#4169E1',
+    backgroundColor: "#4169E1",
   },
   categoryIcon: {
     fontSize: 32,
@@ -139,42 +155,42 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-    color: '#333333',
+    fontWeight: "600",
+    textAlign: "center",
+    color: "#333333",
   },
   checkmark: {
-    position: 'absolute',
+    position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
     borderRadius: 12,
     padding: 4,
   },
   footer: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: "#E0E0E0",
   },
   selectionCount: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#666666',
+    fontWeight: "600",
+    color: "#666666",
     marginBottom: 12,
   },
   proceedButton: {
-    backgroundColor: '#4169E1',
+    backgroundColor: "#4169E1",
     paddingVertical: 16,
     borderRadius: 30,
-    alignItems: 'center',
+    alignItems: "center",
   },
   proceedButtonDisabled: {
-    backgroundColor: '#B0C4DE',
+    backgroundColor: "#B0C4DE",
   },
   proceedButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

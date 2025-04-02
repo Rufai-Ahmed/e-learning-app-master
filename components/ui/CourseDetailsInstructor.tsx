@@ -1,21 +1,24 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native"
+import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { useAppSelector } from "@/hooks/useAppSelector";
-import {User} from "lucide-react-native"
+import { User } from "lucide-react-native";
 
 export const InstructorProfile = () => {
-  const courseDetails = useAppSelector(state => state.courses.courseDetails)
+  const courseDetails = useAppSelector((state) => state.courses.courseDetails);
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Instructor</Text>
 
       <View style={styles.profile}>
-      {courseDetails?.instructor?.image_link ? 
-        <Image
-          source={{
-            uri: courseDetails?.instructor?.image_link
-          }}
-          style={styles.avatar}
-        /> :  <User size={35} color="black"/>}
+        {courseDetails?.instructor?.image_link ? (
+          <Image
+            source={{
+              uri: courseDetails?.instructor?.image_link,
+            }}
+            style={styles?.avatar}
+          />
+        ) : (
+          <User size={35} color="black" />
+        )}
 
         <View style={styles.info}>
           <Text style={styles.name}>{courseDetails?.instructor?.fullname}</Text>
@@ -23,7 +26,7 @@ export const InstructorProfile = () => {
         </View>
       </View>
 
-     {/* <View style={styles.stats}>
+      {/* <View style={styles.stats}>
         <View style={styles.stat}>
           <Text style={styles.statNumber}>4.7</Text>
           <Text style={styles.statLabel}>Instructor rating</Text>
@@ -54,8 +57,8 @@ export const InstructorProfile = () => {
         <Text style={styles.buttonText}>View profile</Text>
       </TouchableOpacity>*/}
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -127,5 +130,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
-})
-
+});

@@ -39,6 +39,8 @@ export default function SupportScreen() {
 
   const handleOpenChat = () => {
     // Implement live chat
+    router.push('/students/profile/support/tawk');
+
   };
 
   const handleOpenGuides = () => {
