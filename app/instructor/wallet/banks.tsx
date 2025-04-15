@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TextInput,
   ScrollView,
   Image,
+  ActivityIndicator,
+  FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -16,6 +18,7 @@ import {
   ChevronRight,
   Building2,
 } from "lucide-react-native";
+import { api } from "@/lib/actions/api";
 
 type Bank = {
   id: string;
@@ -90,7 +93,8 @@ const dummyBanks: Bank[] = [
 
 export default function BanksScreen() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [banks] = useState<Bank[]>(dummyBanks);
+  const [banks, setBanks] = useState<Bank[]>(dummyBanks);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const filteredBanks = banks.filter(
     (bank) =>
@@ -104,6 +108,21 @@ export default function BanksScreen() {
       params: { bank: encodeURIComponent(JSON.stringify(bank)) },
     });
   };
+
+  useEffect(() => {
+    async function fetchBanks() {
+      setLoading(true);
+      try {
+        const fetchedBanks: Bank[] = await api.getBanks();
+        setBanks(fetchedBanks);
+      } catch (error) {
+        console.error("Error fetching banks:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchBanks();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -128,36 +147,45 @@ export default function BanksScreen() {
         />
       </View>
 
-      <ScrollView style={styles.content}>
-        {filteredBanks.map((bank) => (
-          <TouchableOpacity
-            key={bank.id}
-            style={styles.bankCard}
-            onPress={() => handleBankSelect(bank)}
-          >
-            <View style={styles.bankInfo}>
-              {bank.logo ? (
-                <Image source={{ uri: bank.logo }} style={styles.bankLogo} />
-              ) : (
-                <View style={styles.bankLogoPlaceholder}>
-                  <Building2 size={24} color="#4169E1" />
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color="#4169E1"
+          style={{ marginTop: 20 }}
+        />
+      ) : (
+        <FlatList
+          data={filteredBanks}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.content}
+          renderItem={({ item: bank }) => (
+            <TouchableOpacity
+              style={styles.bankCard}
+              onPress={() => handleBankSelect(bank)}
+            >
+              <View style={styles.bankInfo}>
+                {bank.logo ? (
+                  <Image source={{ uri: bank.logo }} style={styles.bankLogo} />
+                ) : (
+                  <View style={styles.bankLogoPlaceholder}>
+                    <Building2 size={24} color="#4169E1" />
+                  </View>
+                )}
+                <View style={styles.bankDetails}>
+                  <Text style={styles.bankName}>{bank.name}</Text>
+                  <Text style={styles.bankCode}>Code: {bank.code}</Text>
                 </View>
-              )}
-              <View style={styles.bankDetails}>
-                <Text style={styles.bankName}>{bank.name}</Text>
-                <Text style={styles.bankCode}>Code: {bank.code}</Text>
               </View>
+              <ChevronRight size={20} color="#666" />
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No banks found</Text>
             </View>
-            <ChevronRight size={20} color="#666" />
-          </TouchableOpacity>
-        ))}
-
-        {filteredBanks?.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No banks found</Text>
-          </View>
-        )}
-      </ScrollView>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }

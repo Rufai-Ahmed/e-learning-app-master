@@ -19,16 +19,45 @@ import { api } from "@/lib/actions/api";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { getUserInfo, getUserLoginToken } from "@/lib/reducers/storeUserInfo";
 
+interface FormData {
+  password: string;
+  confirmPassword: string;
+}
+
 const ResetPasswordScreen = () => {
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
-  const { control, handleSubmit, watch } = useForm();
-  const password = watch("password");
+  const { control, handleSubmit, watch } = useForm<FormData>();
+  const password = watch("password") || "";
   const params = useLocalSearchParams();
   const { email, code } = params;
   const { showAlert } = useAlert();
   const [loading, setLoading] = useState(false);
   const dispatch = useAppDispatch();
+
+  // Password validation rules
+  const passwordRules = {
+    required: "Password is required",
+    minLength: {
+      value: 8,
+      message: "Password must be at least 8 characters",
+    },
+    validate: {
+      hasUpperCase: (value: string) =>
+        /[A-Z]/.test(value) || "Password must contain at least one uppercase letter",
+      hasNumber: (value: string) =>
+        /\d/.test(value) || "Password must contain at least one number",
+      hasSpecialChar: (value: string) =>
+        /[!@#$%^&*(),.?":{}|<>]/.test(value) ||
+        "Password must contain at least one special character",
+    },
+  };
+
+  // Check password requirements
+  const meetsLength = password.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -93,42 +122,65 @@ const ResetPasswordScreen = () => {
           <Controller
             control={control}
             name="password"
-            rules={{
-              required: "Password is required",
-              minLength: {
-                value: 8,
-                message: "Password must be at least 8 characters",
-              },
-            }}
+            rules={passwordRules}
             render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <TextInput
-                label="New Password"
-                value={value}
-                onChangeText={onChange}
-                secureTextEntry={!showPassword}
-                error={!!error}
-                left={
-                  <TextInput.Icon
-                    icon={() => <Lock size={20} color="#4169E1" />}
-                  />
-                }
-                right={
-                  <TextInput.Icon
-                    icon={() =>
-                      showPassword ? (
-                        <EyeOff size={20} color="#4169E1" />
-                      ) : (
-                        <Eye size={20} color="#4169E1" />
-                      )
-                    }
-                    onPress={() => setShowPassword(!showPassword)}
-                  />
-                }
-                style={styles.input}
-                mode="outlined"
-                outlineColor="#E0E0E0"
-                activeOutlineColor="#4169E1"
-              />
+              <>
+                <TextInput
+                  label="New Password"
+                  value={value}
+                  onChangeText={onChange}
+                  secureTextEntry={!showPassword}
+                  error={!!error}
+                  left={
+                    <TextInput.Icon
+                      icon={() => <Lock size={20} color="#4169E1" />}
+                    />
+                  }
+                  right={
+                    <TextInput.Icon
+                      icon={() =>
+                        showPassword ? (
+                          <EyeOff size={20} color="#4169E1" />
+                        ) : (
+                          <Eye size={20} color="#4169E1" />
+                        )
+                      }
+                      onPress={() => setShowPassword(!showPassword)}
+                    />
+                  }
+                  style={styles.input}
+                  mode="outlined"
+                  outlineColor="#E0E0E0"
+                  activeOutlineColor="#4169E1"
+                />
+                {/* Password Requirements Indicators */}
+                <View style={styles.passwordRequirements}>
+                  <Text style={[
+                    styles.requirementText,
+                    meetsLength && styles.requirementMet
+                  ]}>
+                    • Minimum 8 characters {meetsLength ? "✓" : "✗"}
+                  </Text>
+                  <Text style={[
+                    styles.requirementText,
+                    hasUpperCase && styles.requirementMet
+                  ]}>
+                    • Uppercase letter {hasUpperCase ? "✓" : "✗"}
+                  </Text>
+                  <Text style={[
+                    styles.requirementText,
+                    hasNumber && styles.requirementMet
+                  ]}>
+                    • Number {hasNumber ? "✓" : "✗"}
+                  </Text>
+                  <Text style={[
+                    styles.requirementText,
+                    hasSpecialChar && styles.requirementMet
+                  ]}>
+                    • Special character {hasSpecialChar ? "✓" : "✗"}
+                  </Text>
+                </View>
+              </>
             )}
           />
 
@@ -233,6 +285,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
     fontWeight: "600",
+  },
+  passwordRequirements: {
+    marginBottom: 16,
+  },
+  requirementText: {
+    fontSize: 12,
+    color: "#666",
+  },
+  requirementMet: {
+    color: "#2ecc71",
   },
 });
 

@@ -4,7 +4,7 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { router, Stack } from "expo-router";
+import { router, Stack, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
@@ -65,12 +65,20 @@ export const SessionHandler = ({ isDarkMode, setIsDarkMode }: any) => {
   const theme = useAppSelector((state) => state.theme.themeData);
   const userData = useAppSelector((state) => state.user.user);
   const userToken = useAppSelector((state) => state.user.userLoginToken);
+  const pathname = usePathname();
+  const rehydrated = useAppSelector((state) => state._persist?.rehydrated);
+
 
   useEffect(() => {
+    if (!rehydrated) return; 
+
     dispatch(getThemeData(theme));
     setIsDarkMode(theme);
 
-    if (userData === null) router.push("/(auth)");
+    if (userData === null) {
+      router.push("/(auth)");
+      return;
+    }
 
     if (userData) {
       const getUserCurrentSession = async () => {
@@ -80,7 +88,27 @@ export const SessionHandler = ({ isDarkMode, setIsDarkMode }: any) => {
           const userRole = userData?.roles.map(
             (e: { name: string }) => e.name
           )?.[0] as "student" | "instructor";
+
+          const otherRole = userData?.roles.map(
+            (e: { name: string }) => e.name
+          )?.[1] as "student" | "instructor";
+
           setTimeout(() => {
+            if (
+              pathname.includes("student") &&
+              (userRole === "student" || otherRole === "student")
+            ) {
+              router.push("/students/(tabs)");
+              return;
+            }
+            if (
+              pathname.includes("instructor") &&
+              (userRole === "instructor" || otherRole === "instructor")
+            ) {
+              router.push("/instructor/(tabs)");
+              return;
+            }
+
             if (userRole === "student") router.push("/students/(tabs)");
             else router.push("/instructor/(tabs)");
           }, 0);

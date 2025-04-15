@@ -1,15 +1,15 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native"
-import { StarRating } from "./StarRating"
+import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { StarRating } from "./StarRating";
 
 interface CourseCardProps {
-  title: string
-  author: string
-  price: string
-  rating: number
-  reviews: number
-  image: string
-  isBestseller?: boolean
-  onPress: () => void
+  title: string;
+  author: string;
+  price: string;
+  rating: number;
+  reviews: number;
+  image: string;
+  isBestseller?: boolean;
+  onPress: () => void;
 }
 
 export const CourseCard = ({
@@ -22,9 +22,8 @@ export const CourseCard = ({
   isBestseller,
   onPress,
 }: CourseCardProps) => {
-  
   //console.log(author)
-  
+
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <Image source={{ uri: image }} style={styles.image} />
@@ -34,10 +33,10 @@ export const CourseCard = ({
         </Text>
         <Text style={styles.author}>{author}</Text>
         <View style={styles.ratingContainer}>
-         <StarRating rating={rating} size={14} />
+          <StarRating rating={rating} size={14} />
           <Text style={styles.reviews}>({reviews}) reviews</Text>
         </View>
-        <Text style={styles.price}>NGN {price}</Text>
+        <Text style={styles.price}>$ {price}</Text>
         {/* {isBestseller && (
           <View style={styles.bestsellerTag}>
             <Text style={styles.bestsellerText}>Bestseller</Text>
@@ -45,8 +44,8 @@ export const CourseCard = ({
         )} */}
       </View>
     </TouchableOpacity>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -61,7 +60,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    marginVertical:5
+    marginVertical: 5,
   },
   image: {
     width: "100%",
@@ -111,5 +110,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
   },
-})
-
+});

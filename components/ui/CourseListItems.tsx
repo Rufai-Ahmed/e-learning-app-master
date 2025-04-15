@@ -1,15 +1,15 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native"
-import { StarRating } from "./StarRating"
+import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { StarRating } from "./StarRating";
 
 interface CourseListItemProps {
-  title: string
-  author: string
-  price: string
-  rating: number
-  reviews: number
-  image: string
-  isBestseller?: boolean
-  onPress: () => void
+  title: string;
+  author: string;
+  price: string;
+  rating: number;
+  reviews: number;
+  image: string;
+  isBestseller?: boolean;
+  onPress: () => void;
 }
 
 export const CourseListItem = ({
@@ -34,7 +34,7 @@ export const CourseListItem = ({
           <StarRating rating={rating || 0} size={14} />
           <Text style={styles.reviews}>({reviews || 0})</Text>
         </View>
-        <Text style={styles.price}>NGN {price}</Text>
+        <Text style={styles.price}>$ {price}</Text>
         {/* {isBestseller && (
           <View style={styles.bestsellerTag}>
             <Text style={styles.bestsellerText}>Bestseller</Text>
@@ -42,8 +42,8 @@ export const CourseListItem = ({
         )} */}
       </View>
     </TouchableOpacity>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -102,5 +102,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
   },
-})
-
+});

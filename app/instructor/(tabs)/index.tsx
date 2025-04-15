@@ -23,6 +23,12 @@ const HomeScreen = () => {
   const userData = useAppSelector(state => state.user.user)
   const userToken = useAppSelector(state => state.user.userLoginToken)
   const dispatch = useAppDispatch()
+
+  useEffect(() => {
+    const res = api.getInstructorTransactions(userData?.id, userToken);
+    console.debug({res})
+
+  }, [])
   
   return (
     <SafeAreaView style={{flex:1}}>

@@ -1,50 +1,30 @@
+import Loader from "@/components/ui/Loader";
+import { useAlert } from "@/hooks/useAlert";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
+import { api } from "@/lib/actions/api";
+import { getInstructorCourses } from "@/lib/reducers/storeInstructorCourses";
+import { router } from "expo-router";
+import {
+  ChevronRight,
+  HelpCircle,
+  LogOut,
+  MessageSquare,
+  Settings,
+  Shield,
+  User,
+  Wallet
+} from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
+  Image,
   ScrollView,
   StyleSheet,
-  Image,
-  Switch,
+  Text,
   TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  ArrowLeft,
-  Mail,
-  DollarSign,
-  Globe,
-  HelpCircle,
-  AlertTriangle,
-  FileText,
-  Shield,
-  Trash2,
-  Moon,
-  Sun,
-  Smartphone,
-  Calendar,
-  Download,
-  Wifi,
-  Video,
-  Folder,
-  Bell,
-  Languages,
-  LogOut,
-  ChevronRight,
-  Settings,
-  User,
-  Wallet,
-  Star,
-  MessageSquare,
-  BookOpen,
-} from "lucide-react-native";
-import { router } from "expo-router";
-import { useAppSelector } from "@/hooks/useAppSelector";
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { useAlert } from "@/hooks/useAlert";
-import { api } from "@/lib/actions/api";
-import Loader from "@/components/ui/Loader";
-import { getInstructorCourses } from "@/lib/reducers/storeInstructorCourses";
 
 type InstructorProfile = {
   id: string;
@@ -144,9 +124,9 @@ export default function ProfileScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.profileHeader}>
           <View style={styles?.avatarContainer}>
-            {instructor?.avatar ? (
+            {instructor?.image_link ? (
               <Image
-                source={{ uri: instructor?.avatar }}
+                source={{ uri: instructor?.image_link }}
                 style={styles?.avatar}
               />
             ) : (

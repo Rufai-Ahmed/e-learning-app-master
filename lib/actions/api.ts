@@ -1,6 +1,18 @@
 import { axios } from "../axios";
 
 export const api = {
+  verifyAccountDetails: async function (data: {
+    account_bank: string;
+    account_number: string;
+    currency: string;
+  }) {
+    const response = await axios.post(`/utility/verify-account-details`, data);
+    return response?.data?.data;
+  },
+  getBanks: async function () {
+    const response = await axios.get(`/utility/get-banks`, );
+    return response?.data?.data;
+  },
   createAccount: async function (body, roles) {
     const response = await axios.post("/auth/register", body, {
       headers: {
@@ -14,6 +26,20 @@ export const api = {
   },
   signinAccount: async function (data) {
     const response = await axios.post("/auth/login", data);
+    return response?.data;
+  },
+  googleSignIn: async function (userType = "student") {
+    const response = await axios.get("/auth/google", {
+      params: {
+        user_type: userType,
+      },
+    });
+    return response?.data;
+  },
+  verifyGoogleCallback: async function (queryParams) {
+    const response = await axios.get("/auth/google/callback", {
+      params: queryParams,
+    });
     return response?.data;
   },
   sendVerificationEmail: async function (data) {
@@ -155,6 +181,7 @@ export const api = {
     });
     return response?.data;
   },
+
   createCourse: async function (body, token) {
     console.log(body, token);
     const response = await axios.post(`/courses`, body, {
@@ -244,7 +271,7 @@ export const api = {
   uploadCourseImage: async function (id, token, body) {
     try {
       console.log(id, token, body);
-      const response = await axios.post(`/courses/${id}/image-upload`, body, {
+      const response = await axios.post(`/courses/${id}/upload-image`, body, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -279,6 +306,14 @@ export const api = {
   },
   getInstructorCourses: async function (id, token) {
     const response = await axios.get(`/instructors/${id}/courses`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response?.data;
+  },
+  getInstructorTransactions: async function (id, token) {
+    const response = await axios.get(`/instructors/${id}/transactions`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

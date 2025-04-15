@@ -21,7 +21,7 @@ import { getInstructorCourses } from "@/lib/reducers/storeInstructorCourses";
 import { router } from "expo-router";
 
 type Course = {
-  id: number;
+  id: string;
   name: string;
   description: string;
   price: number;
@@ -73,7 +73,7 @@ export default function ManageCoursesScreen() {
     setIsEditModalVisible(true);
   };
 
-  const handleDeleteCourse = async (courseId: number) => {
+  const handleDeleteCourse = async (courseId: string) => {
     try {
       Alert.alert(
         "Delete Course",
@@ -231,7 +231,7 @@ export default function ManageCoursesScreen() {
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Description</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, ]}
                 value={editedDescription}
                 onChangeText={setEditedDescription}
                 placeholder="Enter course description"

@@ -31,6 +31,7 @@ import {
 import { api } from "@/lib/actions/api";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import { router } from "expo-router";
+import { convertUriToBlob } from "@/utils/generic";
 
 // Types
 type CourseDetails = {
@@ -114,7 +115,7 @@ export default function CourseManagementScreen() {
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
   const [categoryInput, setCategoryInput] = useState("");
   const [videoUrl, setVideoUrl] = useState([]);
-  const [imageUrl, setImageUrl] = useState(null);
+  const [imageUrl, setImageUrl] = useState<FormData | null>(null);
 
   // User state
   const [user, setUser] = useState<UserDetails>({
@@ -237,13 +238,10 @@ export default function CourseManagementScreen() {
       const imageUri = result.assets[0].uri;
       const fileName = imageUri.split("/").pop();
       const fileType = fileName?.split(".").pop();
+      const blob = await convertUriToBlob(imageUri);
 
       const formData = new FormData();
-      formData.append("image", {
-        uri: imageUri,
-        name: fileName,
-        type: `image/${fileType}`,
-      });
+      formData.append("image", blob, fileName);
 
       // Send formData to your server or API
       setImageUrl(formData);
@@ -279,16 +277,12 @@ export default function CourseManagementScreen() {
 
       try {
         const videoUri = result.assets[0].uri;
+        const fileName = videoUri.split("/").pop() || "photo.jpg";
 
-        // Create FormData for file upload
+        const blob = await convertUriToBlob(videoUri);
         const formData = new FormData();
-        formData.append("video", {
-          uri: videoUri,
-          name: "video.mp4",
-          type: "video/mp4",
-        } as any);
+        formData.append("video", blob, fileName);
 
-        // Store FormData in state
         setVideoUrl((prev) => [...prev, formData]);
 
         Alert.alert("Success", "Video selected successfully!");
@@ -1650,7 +1644,7 @@ export default function CourseManagementScreen() {
           onPress={() => {
             if (activeTab === "course") {
               if (courseStep === "details") {
-                // Go back to previous screen
+                router.back();
               } else if (courseStep === "learning") {
                 setCourseStep("details");
               } else if (courseStep === "modules") {

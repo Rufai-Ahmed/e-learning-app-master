@@ -16,6 +16,7 @@ import Loader from "@/components/ui/Loader";
 import { api } from "@/lib/actions/api";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { getUserLoginToken } from "@/lib/reducers/storeUserInfo";
+import React from "react";
 
 const VerifyEmailScreen = () => {
   const params = useLocalSearchParams();
@@ -43,11 +44,7 @@ const VerifyEmailScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
-  interface OtpChangeHandler {
-    (value: string, index: number): void;
-  }
-
-  const handleOtpChange: OtpChangeHandler = (value, index) => {
+  const handleOtpChange = (value: string, index: number) => {
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
@@ -57,30 +54,44 @@ const VerifyEmailScreen = () => {
     }
   };
 
+  const handleKeyPress = (
+    e: { nativeEvent: { key: string } },
+    index: number
+  ) => {
+    if (e.nativeEvent.key === "Backspace") {
+      if (otp[index] === "" && index > 0) {
+        inputRefs.current[index - 1]?.focus();
+
+        const newOtp = [...otp];
+        newOtp[index - 1] = "";
+        setOtp(newOtp);
+      }
+    }
+  };
+
   const handleResend = async () => {
     try {
       setLoading(true);
       if (canResend) {
-        // Implement your resend OTP logic here
         if (type === "signup") {
           await api.sendVerificationEmail({ email });
         } else if (type === "reset-password") {
           await api.sendForgotPwdVerificationEmail({ email });
         }
-        showAlert("success", "Otp sent successfully!");
+        showAlert("success", "OTP sent successfully!");
         console.log("Resending OTP...");
 
         setTimer(30);
         setCanResend(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
       if (err.response?.data.message) {
         showAlert("error", err.response?.data.message);
       } else if (err.message) {
         showAlert("error", err.message);
       } else {
-        showAlert("error", "Error re-sending otp. Try again");
+        showAlert("error", "Error re-sending OTP. Try again");
       }
     } finally {
       setLoading(false);
@@ -99,13 +110,10 @@ const VerifyEmailScreen = () => {
       };
 
       const res = await api.verifyEmail(body);
-      // Implement your verification logic here
-      // If successful:
 
       console.log(res?.data.token);
 
       dispatch(getUserLoginToken(res?.data.token));
-
       showAlert("success", "OTP verified successfully");
 
       setTimeout(() => {
@@ -118,7 +126,7 @@ const VerifyEmailScreen = () => {
           router.push("/students/(auth)/course-category-selection");
         }
       }, 500);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       if (error.response?.data.message) {
         showAlert("error", error.response?.data.message);
@@ -161,8 +169,10 @@ const VerifyEmailScreen = () => {
                 style={styles.otpInput}
                 value={digit}
                 onChangeText={(value) => handleOtpChange(value, index)}
+                onKeyPress={(e) => handleKeyPress(e, index)}
                 maxLength={1}
                 ref={(ref) => (inputRefs.current[index] = ref)}
+                keyboardType="number-pad"
               />
             ))}
           </View>

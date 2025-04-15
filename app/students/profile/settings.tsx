@@ -1,23 +1,21 @@
+import { useAlert } from "@/hooks/useAlert";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
+import { api } from "@/lib/actions/api";
+import { getUserInfo } from "@/lib/reducers/storeUserInfo";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  SafeAreaView,
-  View,
-  Text,
-  StyleSheet,
-  Switch,
-  TouchableOpacity,
-  ScrollView,
   Image,
-  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import Feather from "react-native-vector-icons/Feather";
-import { useAppSelector } from "@/hooks/useAppSelector";
-import { useAlert } from "@/hooks/useAlert";
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { api } from "@/lib/actions/api";
-import { getUserInfo } from "@/lib/reducers/storeUserInfo";
 
 const ProfileSettingsScreen = () => {
   const { showAlert } = useAlert();
@@ -176,7 +174,6 @@ const ProfileSettingsScreen = () => {
           <Text style={styles.sectionHeader}>About</Text>
           <TouchableOpacity
             style={styles.row}
-            onPress={() => router.navigate("")}
           >
             <View style={[styles.rowIcon, { backgroundColor: "#1976d2" }]}>
               <Feather name="info" size={20} color="#fff" />
