@@ -1,15 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { useAlert } from "@/hooks/useAlert";
-import Loader from "@/components/ui/Loader";
-import { api } from '@/lib/actions/api';
-import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useFocusEffect } from '@react-navigation/native';
-import {useState, useEffect} from "react"
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 
 

@@ -47,7 +47,6 @@ const CategorySelectionScreen = () => {
   const handleProceed = () => {
     if (selectedCategories.length >= 5) {
       console.log("Selected categories:", selectedCategories);
-      // Navigate to the next screen or perform any other action
       router.push("/instructor/(tabs)"); // Replace with your actual route
     }
   };

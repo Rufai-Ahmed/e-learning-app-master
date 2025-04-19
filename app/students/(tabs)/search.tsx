@@ -33,12 +33,12 @@ export default function SearchScreen() {
   const handleSearch = async (query: string) => {
     setSearchLoading(true);
     setQuery(query);
-    setSearchResults([]); // Clear previous results
+    setSearchResults([]); 
 
     try {
       const res = await api.searchCourses(query, token);
       if (res?.data?.length === 0) {
-        setSearchResults([]); // No results found
+        setSearchResults([]); 
       } else {
         dispatch(getSearchData(res?.data));
         dispatch(getSearchTerm(query));
@@ -80,7 +80,7 @@ export default function SearchScreen() {
     </TouchableOpacity>
   );
 
-  // Fetch all courses on initial mount by querying with an empty string.
+  
   useEffect(() => {
     handleSearch("");
   }, []);

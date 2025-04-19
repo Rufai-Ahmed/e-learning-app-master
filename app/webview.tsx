@@ -1,9 +1,16 @@
-import React, { useCallback, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, BackHandler, Platform } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { WebView } from 'react-native-webview';
-import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useState } from "react";
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  BackHandler,
+  Platform,
+  Alert,
+} from "react-native";
+import { Stack, router, useLocalSearchParams } from "expo-router";
+import { WebView } from "react-native-webview";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 
 const colors = {
   primary: "#4169E1",
@@ -15,34 +22,45 @@ const DepositWebView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const params = useLocalSearchParams();
 
+  const handleBack = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push("/students/(tabs)");
+    }
+    return true;
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-        router.push('/students/(tabs)');
-        return true;
-      });
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        handleBack
+      );
 
       return () => {
         backHandler.remove();
       };
-    }, [])
+    }, [handleBack])
   );
 
-  const handleNavigationStateChange = (navState) => {
+  const handleNavigationStateChange = (navState: { url: string }) => {
     const { url } = navState;
-    if (url.includes('payment-success')) {
-      router.push('/transaction-status/success');
-    } else if (url.includes('payment-failed')) {
-      router.push('/transaction-status/failed');
+    if (url.includes("payment-success")) {
+      Alert.alert("Success", "Payment completed successfully!");
+      router.push("/students/(tabs)/my-learning");
+    } else if (url.includes("payment-failed")) {
+      Alert.alert("Failed", "Payment failed. Please try again.");
+      router.push("/students");
     }
   };
 
-  if (Platform.OS === 'web') {
+  if (Platform.OS === "web") {
     return (
       <View style={styles.container}>
         <Stack.Screen
           options={{
-            title: 'Pay for Course',
+            title: "Pay for Course",
             headerStyle: { backgroundColor: colors.background },
             headerShadowVisible: false,
             headerLeft: () => (
@@ -50,7 +68,7 @@ const DepositWebView = () => {
                 name="close"
                 size={24}
                 color={colors.primary}
-                onPress={() => router.back()}
+                onPress={handleBack}
                 style={styles.closeButton}
               />
             ),
@@ -73,7 +91,7 @@ const DepositWebView = () => {
       <View style={styles.container}>
         <Stack.Screen
           options={{
-            title: 'Pay for Course',
+            title: "Pay for Course",
             headerStyle: { backgroundColor: colors.background },
             headerShadowVisible: false,
             headerLeft: () => (
@@ -81,14 +99,14 @@ const DepositWebView = () => {
                 name="close"
                 size={24}
                 color={colors.primary}
-                onPress={() => router.back()}
+                onPress={handleBack}
                 style={styles.closeButton}
               />
             ),
           }}
         />
         <WebView
-          source={{ uri: params?.uri }}
+          source={{ uri: params?.uri as string }}
           style={styles.webview}
           onLoadStart={() => setIsLoading(true)}
           onLoadEnd={() => setIsLoading(false)}
@@ -122,20 +140,20 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   loadingContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: colors.background,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   closeButton: {
     padding: 8,

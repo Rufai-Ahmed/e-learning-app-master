@@ -1,25 +1,26 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Alert,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useAppSelector } from "@/hooks/useAppSelector";
 import { router, useLocalSearchParams } from "expo-router";
 import {
+  AlertCircle,
   ArrowLeft,
   Building2,
-  DollarSign,
-  ChevronRight,
-  AlertCircle,
+  ChevronRight
 } from "lucide-react-native";
+import React, { useState } from "react";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function WithdrawScreen() {
   const params = useLocalSearchParams();
+  const userData = useAppSelector(state => state.user.user)
   const selectedBank = params.bank
     ? JSON.parse(decodeURIComponent(params.bank as string))
     : null;
@@ -45,6 +46,10 @@ export default function WithdrawScreen() {
 
     if (parseFloat(amount) < 100) {
       Alert.alert("Error", "Minimum withdrawal amount is ₦100");
+      return;
+    }
+    if (parseFloat(amount) > parseFloat(userData?.wallet?.balance)) {
+      Alert.alert("Error", "Insufficient balance");
       return;
     }
 

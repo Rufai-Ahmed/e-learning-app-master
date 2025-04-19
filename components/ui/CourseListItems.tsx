@@ -1,5 +1,6 @@
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { StarRating } from "./StarRating";
+import React from "react";
 
 interface CourseListItemProps {
   title: string;

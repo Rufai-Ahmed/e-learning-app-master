@@ -1,3 +1,7 @@
+import { useAlert } from "@/hooks/useAlert";
+import { getUserLoginToken } from "@/lib/reducers/storeUserInfo";
+import { getUserInfo } from "@/lib/reducers/storeUserInfo";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { api } from "@/lib/actions/api";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -21,6 +25,8 @@ import {
 } from "react-native";
 
 const SocialAuthScreen = () => {
+  const dispatch = useAppDispatch();
+  const { showAlert } = useAlert();
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: process.env.EXPO_PUBLIC_WEB_ID,
@@ -44,13 +50,36 @@ const SocialAuthScreen = () => {
         return;
       }
 
-      console.debug({ data }); // const authResponse = await api.verifyIdToken({ idToken });
-      // console.log("Backend verification successful!", authResponse);
+      const res = await api.googleSignIn(data.idToken, "instructor");
+      console.debug({ data, res });
+      const userRole = res?.data?.roles.map(
+        (e: { name: string }) => e.name
+      )?.[0] as "student" | "instructor";
+      const otherRole = res?.data?.roles.map(
+        (e: { name: string }) => e.name
+      )?.[1] as "student" | "instructor";
 
-      // At this point, you can save the authentication token and user info as needed.
-      // Then, navigate to the main application screen.
-      // router.push("/instructor/(tabs)");
-    } catch (error) {
+      if (userRole  !== "instructor" && otherRole !== 'instructor') {
+        console.error({ otherRole, userRole });
+        Alert.alert(
+          "Error",
+          "You're not an instructor. Try logging in as a student."
+        );
+        return;
+      }
+
+      dispatch(getUserInfo(res?.data));
+      dispatch(getUserLoginToken(res?.data.token));
+      console.log(res, "data");
+
+      showAlert("success", "Account logged in successfully");
+
+      setTimeout(() => {
+        router.push({
+          pathname: "/instructor/(tabs)",
+        });
+      }, 500);
+    } catch (error: any) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         console.log("User cancelled the login flow");
       } else if (error.code === statusCodes.IN_PROGRESS) {

@@ -10,7 +10,7 @@ export const api = {
     return response?.data?.data;
   },
   getBanks: async function () {
-    const response = await axios.get(`/utility/get-banks`, );
+    const response = await axios.get(`/utility/get-banks`);
     return response?.data?.data;
   },
   createAccount: async function (body, roles) {
@@ -28,12 +28,18 @@ export const api = {
     const response = await axios.post("/auth/login", data);
     return response?.data;
   },
-  googleSignIn: async function (userType = "student") {
-    const response = await axios.get("/auth/google", {
-      params: {
-        user_type: userType,
+  googleSignIn: async function (idToken: string, userType: string) {
+    const response = await axios.post(
+      "/auth/google/mobile",
+      {
+        token: idToken,
       },
-    });
+      {
+        params: {
+          user_type: userType,
+        },
+      }
+    );
     return response?.data;
   },
   verifyGoogleCallback: async function (queryParams) {
@@ -73,6 +79,14 @@ export const api = {
       },
     });
     return response?.data;
+  },
+  getCourseCertificate: async function (id, token) {
+    const response = await axios.get(`/courses/${id}/certificate`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response?.data?.data;
   },
   handleCourseCategorySelection: async function (data, token) {
     const response = await axios.post("/users/category", data, {
@@ -189,7 +203,7 @@ export const api = {
         Authorization: `Bearer ${token}`,
       },
     });
-    return response?.data;
+    return response?.data?.data;
   },
   createLearningObjectives: async function (id, body, token) {
     console.log(id, token);
@@ -216,6 +230,42 @@ export const api = {
         Authorization: `Bearer ${token}`,
       },
     });
+    return response?.data;
+  },
+  updateModule: async function (courseId, moduleId, data, token) {
+    const response = await axios.put(
+      `/courses/${courseId}/modules/${moduleId}`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response?.data;
+  },
+  addLesson: async function (courseId, moduleId, data, token) {
+    const response = await axios.post(
+      `/courses/${courseId}/modules/${moduleId}/lessons`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response?.data;
+  },
+  updateLesson: async function (courseId, moduleId, lessonId, data, token) {
+    const response = await axios.put(
+      `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     return response?.data;
   },
   deleteLearningObjective: async function (id, token, userId) {
@@ -320,6 +370,30 @@ export const api = {
     });
     return response?.data;
   },
+  addInstructorBankAccount: async function (instructorId, data, token) {
+    const response = await axios.post(
+      `/instructors/${instructorId}/bank-account`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response?.data;
+  },
+  requestInstructorPayout: async function (instructorId, data, token) {
+    const response = await axios.post(
+      `/instructors/${instructorId}/request-payout`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response?.data;
+  },
   updateCourse: async function (id, body, token) {
     const response = await axios.put(`/courses/${id}`, body, {
       headers: {
@@ -357,6 +431,110 @@ export const api = {
         name,
       },
     });
+    return response?.data;
+  },
+  submitQuiz: async function (
+    courseId: string,
+    moduleId: string,
+    quizId: string,
+    answers: { question_id: string; option_id: string }[],
+    token: string
+  ) {
+    const response = await axios.post(
+      `/courses/${courseId}/modules/${moduleId}/quiz/${quizId}/submit`,
+      answers,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response?.data;
+  },
+  getQuiz: async function (courseId: string, moduleId: string, token: string) {
+    const response = await axios.get(
+      `/courses/${courseId}/modules/${moduleId}/quiz`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response?.data?.data;
+  },
+  getQuizById: async function (
+    courseId: string,
+    moduleId: string,
+    quizId: string,
+    token: string
+  ) {
+    const response = await axios.get(
+      `/courses/${courseId}/modules/${moduleId}/quiz/${quizId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response?.data?.data;
+  },
+  getModuleQuizzes: async function (
+    courseId: string,
+    moduleId: string,
+    token: string
+  ) {
+    const response = await axios.get(
+      `/courses/${courseId}/modules/${moduleId}/quiz`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response?.data;
+  },
+  createQuiz: async function (
+    courseId: string,
+    moduleId: string,
+    data: {
+      questions: Array<{
+        question: string;
+        options: Array<{
+          value: string;
+          answer: boolean;
+        }>;
+      }>;
+    },
+    token: string
+  ) {
+    const response = await axios.post(
+      `/courses/${courseId}/modules/${moduleId}/quiz`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response?.data;
+  },
+  uploadLessonVideo: async function (
+    courseId: string,
+    moduleId: string,
+    lessonId: string,
+    videoData: FormData,
+    token: string
+  ) {
+    const response = await axios.post(
+      `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/upload-video`,
+      videoData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
     return response?.data;
   },
 };

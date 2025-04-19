@@ -16,6 +16,7 @@ import Loader from "@/components/ui/Loader";
 import { api } from "@/lib/actions/api";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { getUserLoginToken } from "@/lib/reducers/storeUserInfo";
+import React from "react";
 
 const VerifyEmailScreen = () => {
   const params = useLocalSearchParams();
@@ -48,12 +49,47 @@ const VerifyEmailScreen = () => {
   }
 
   const handleOtpChange: OtpChangeHandler = (value, index) => {
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
+    // Handle pasting a full or partial OTP
+    if (index === 0 && value.length > 1) {
+      if (value.length >= 6) {
+        // Handle full OTP paste
+        const otpArray = value.slice(0, 6).split("");
+        setOtp(otpArray);
+        inputRefs.current[5]?.focus();
+      } else {
+        // Handle partial OTP paste
+        const pastedOtp = value.split("");
+        const newOtp = [...otp];
 
-    if (value !== "" && index < 5) {
-      inputRefs.current[index + 1]?.focus();
+        // Fill in the pasted characters
+        pastedOtp.forEach((char, idx) => {
+          if (idx < 6) {
+            newOtp[idx] = char;
+          }
+        });
+
+        setOtp(newOtp);
+
+        // Focus the next empty input or the last one
+        const nextEmptyIndex = newOtp.findIndex(
+          (char, idx) => idx >= pastedOtp.length && char === ""
+        );
+        if (nextEmptyIndex !== -1) {
+          inputRefs.current[nextEmptyIndex]?.focus();
+        } else {
+          inputRefs.current[Math.min(pastedOtp.length, 5)]?.focus();
+        }
+      }
+    } else {
+      // Handle single character input
+      const newOtp = [...otp];
+      newOtp[index] = value;
+      setOtp(newOtp);
+
+      // Move to next input if available
+      if (index < 5) {
+        inputRefs.current[index + 1]?.focus();
+      }
     }
   };
 
@@ -61,7 +97,6 @@ const VerifyEmailScreen = () => {
     try {
       setLoading(true);
       if (canResend) {
-        // Implement your resend OTP logic here
         if (type === "signup") {
           await api.sendVerificationEmail({ email });
         } else if (type === "reset-password") {
@@ -73,13 +108,12 @@ const VerifyEmailScreen = () => {
         setTimer(30);
         setCanResend(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
       if (err.response?.data.message) {
         showAlert("error", err.response?.data.message);
       } else if (err.message) {
-        showAler;
-        t("error", err.message);
+        showAlert("error", err.message);
       } else {
         showAlert("error", "Error re-sending otp. Try again");
       }
@@ -99,15 +133,14 @@ const VerifyEmailScreen = () => {
         code: otpString,
       };
 
-      const res = await api.verifyEmail(body);
-      // Implement your verification logic here
-      // If successful:
+      if (type === "signup") {
+        const res = await api.verifyEmail(body);
 
-      console.log(res?.data.token);
+        console.log(res?.data.token);
 
-      dispatch(getUserLoginToken(res?.data.token));
-
-      showAlert("success", "OTP verified successfully");
+        dispatch(getUserLoginToken(res?.data.token));
+        showAlert("success", "OTP verified successfully");
+      }
 
       setTimeout(() => {
         if (type === "reset-password") {
@@ -119,7 +152,7 @@ const VerifyEmailScreen = () => {
           router.push("/instructor/(auth)/login");
         }
       }, 500);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       if (error.response?.data.message) {
         showAlert("error", error.response?.data.message);

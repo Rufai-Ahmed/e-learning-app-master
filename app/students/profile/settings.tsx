@@ -13,7 +13,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 
@@ -54,7 +54,9 @@ const ProfileSettingsScreen = () => {
       formData.append("image", blob, fileName);
 
       const res = await api.uploadUserImage(userData?.id, userToken, formData);
-      dispatch(getUserInfo(res?.data));
+      dispatch(
+        getUserInfo({ ...userData, image_link: res?.data?.image_link || "" })
+      );
     } catch (error) {
       console.error("Upload error:", error);
     }
@@ -172,9 +174,7 @@ const ProfileSettingsScreen = () => {
         {/* About Section */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>About</Text>
-          <TouchableOpacity
-            style={styles.row}
-          >
+          <TouchableOpacity style={styles.row}>
             <View style={[styles.rowIcon, { backgroundColor: "#1976d2" }]}>
               <Feather name="info" size={20} color="#fff" />
             </View>

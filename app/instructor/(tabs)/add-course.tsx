@@ -32,65 +32,31 @@ import { api } from "@/lib/actions/api";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import { router } from "expo-router";
 import { convertUriToBlob } from "@/utils/generic";
-
-// Types
-type CourseDetails = {
-  name: string;
-  description: string;
-  price: string;
-  category: string[];
-  isPublished: boolean;
-  thumbnail: string | null;
-};
-
-type LearningObjective = {
-  id: string;
-  title: string;
-  description: string;
-};
-
-type QuizOption = {
-  id: string;
-  value: string;
-  answer: boolean;
-};
-
-type QuizQuestion = {
-  id: string;
-  question: string;
-  options: QuizOption[];
-};
-
-type Quiz = {
-  id: string;
-  questions: QuizQuestion[];
-};
-
-type Lesson = {
-  id: string;
-  title: string;
-  description: string;
-  duration: string;
-  videoUrl: string | null;
-};
-
-type Module = {
-  id: string;
-  title: string;
-  description: string;
-  lessons: Lesson[];
-  quiz: Quiz | null;
-};
-
-type UserDetails = {
-  id: string;
-  name: string;
-  email: string;
-  profileImage: string | null;
-};
+import type {
+  Course,
+  Lesson,
+  Module,
+  Quiz,
+  Question,
+  Option,
+  Category,
+} from "@/lib/interfaces/course";
 
 type Tab = "course" | "user";
 type CourseStep = "details" | "learning" | "modules" | "preview";
+
+interface ExtendedCourse extends Course {
+  thumbnail?: string;
+  isPublished?: boolean;
+}
+
+interface ExtendedModule extends Module {
+  videoUrl?: string;
+}
+
+interface QuizQuestion extends Question {
+  options: Option[];
+}
 
 export default function CourseManagementScreen() {
   // Tab state
@@ -100,29 +66,51 @@ export default function CourseManagementScreen() {
   const [courseStep, setCourseStep] = useState<CourseStep>("details");
   const [isLoading, setIsLoading] = useState(false);
   const [courseId, setCourseId] = useState<string | null>(null);
-  const [courseDetails, setCourseDetails] = useState<CourseDetails>({
+  const [courseDetails, setCourseDetails] = useState<ExtendedCourse>({
+    id: "",
     name: "",
     description: "",
     price: "",
     category: [],
+    image_link: "",
+    instructor_id: "",
+    instructor: { fullname: "", image_link: "" },
+    average_rating: null,
+    created_at: "",
+    updated_at: "",
+    students: null,
+    discount: "",
+    modules: [],
+    enrolled: null,
+    rating: 0,
+    reviews: 0,
+    completionStatus: "",
+    percentComplete: "",
+    thumbnail: "",
     isPublished: false,
-    thumbnail: null,
   });
-  const [learningObjectives, setLearningObjectives] = useState<
-    LearningObjective[]
-  >([{ id: "1", title: "", description: "" }]);
-  const [modules, setModules] = useState<Module[]>([]);
+  const [learningObjectives, setLearningObjectives] = useState<Lesson[]>([
+    {
+      id: "1",
+      title: "",
+      description: "",
+      duration: "",
+      module_id: "",
+      video_link: "",
+    },
+  ]);
+  const [modules, setModules] = useState<ExtendedModule[]>([]);
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
   const [categoryInput, setCategoryInput] = useState("");
-  const [videoUrl, setVideoUrl] = useState([]);
+  const [videoUrl, setVideoUrl] = useState<FormData[]>([]);
   const [imageUrl, setImageUrl] = useState<FormData | null>(null);
 
   // User state
-  const [user, setUser] = useState<UserDetails>({
+  const [user, setUser] = useState({
     id: "",
     name: "",
     email: "",
-    profileImage: null,
+    profileImage: "",
   });
 
   // Error state
@@ -140,6 +128,28 @@ export default function CourseManagementScreen() {
 
   // Refs
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Initialize a new module with required fields
+  const createNewModule = (): ExtendedModule => ({
+    id: Date.now().toString(),
+    title: "",
+    description: "",
+    course_id: courseId || "",
+    completed: false,
+    lessons: [],
+    quiz: null,
+    videoUrl: "",
+  });
+
+  // Initialize a new lesson with required fields
+  const createNewLesson = (moduleId: string): Lesson => ({
+    id: Date.now().toString(),
+    title: "",
+    description: "",
+    duration: "",
+    module_id: moduleId,
+    video_link: "",
+  });
 
   // Helper functions
   const validateCourseDetails = (): boolean => {
@@ -194,9 +204,13 @@ export default function CourseManagementScreen() {
                 } title is required`
               );
             }
-            // if (!lesson.videoUrl) {
-            //   newErrors.push(`Lesson ${lessonIndex + 1} in Module ${moduleIndex + 1} requires a video upload`)
-            // }
+            if (!lesson.video_link) {
+              newErrors.push(
+                `Lesson ${lessonIndex + 1} in Module ${
+                  moduleIndex + 1
+                } requires a video upload`
+              );
+            }
           });
         }
       });
@@ -216,17 +230,7 @@ export default function CourseManagementScreen() {
   };
 
   // Image picker functions
-  const pickImage = async (type: "course" | "user") => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (status !== "granted") {
-      Alert.alert(
-        "Permission needed",
-        "Please grant camera roll permissions to upload an image."
-      );
-      return;
-    }
-
+  const handleImagePick = async (type: "course" | "user") => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -234,17 +238,8 @@ export default function CourseManagementScreen() {
       quality: 1,
     });
 
-    if (!result.canceled && result.assets && result.assets?.length > 0) {
+    if (!result.canceled) {
       const imageUri = result.assets[0].uri;
-      const fileName = imageUri.split("/").pop();
-      const fileType = fileName?.split(".").pop();
-      const blob = await convertUriToBlob(imageUri);
-
-      const formData = new FormData();
-      formData.append("image", blob, fileName);
-
-      // Send formData to your server or API
-      setImageUrl(formData);
 
       if (type === "course") {
         setCourseDetails((prev) => ({ ...prev, thumbnail: imageUri }));
@@ -254,8 +249,8 @@ export default function CourseManagementScreen() {
     }
   };
 
-  // Add video picker function after the existing pickImage function
-  const pickVideo = async (moduleId, lessonId) => {
+  // Update the pickVideo function to check completion after video upload
+  const pickVideo = async (moduleId: string, lessonId: string) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (status !== "granted") {
@@ -277,12 +272,29 @@ export default function CourseManagementScreen() {
 
       try {
         const videoUri = result.assets[0].uri;
-        const fileName = videoUri.split("/").pop() || "photo.jpg";
+        const fileName = videoUri.split("/").pop() || "video.mp4";
 
         const blob = await convertUriToBlob(videoUri);
         const formData = new FormData();
         formData.append("video", blob, fileName);
 
+        // Update the video URL for the specific lesson
+        setModules((prevModules) =>
+          prevModules.map((module) => {
+            if (module.id === moduleId) {
+              const updatedLessons = module.lessons.map((lesson) => {
+                if (lesson.id === lessonId) {
+                  return { ...lesson, video_link: videoUri };
+                }
+                return lesson;
+              });
+              return { ...module, lessons: updatedLessons };
+            }
+            return module;
+          })
+        );
+
+        // Store the FormData for later upload
         setVideoUrl((prev) => [...prev, formData]);
 
         Alert.alert("Success", "Video selected successfully!");
@@ -297,10 +309,9 @@ export default function CourseManagementScreen() {
 
   const submitCourse = async () => {
     const isDetailsValid = validateCourseDetails();
-    const isLearningValid = validateLearningObjectives();
     const isModulesValid = validateModules();
 
-    if (!isDetailsValid || !isLearningValid || !isModulesValid) {
+    if (!isDetailsValid || !isModulesValid) {
       Alert.alert(
         "Validation Error",
         "Please fix all errors before publishing"
@@ -311,129 +322,116 @@ export default function CourseManagementScreen() {
     setIsLoading(true);
 
     try {
-      const body = {
+      // Step 1: Create the course with all details including modules
+      const courseBody = {
         name: courseDetails.name,
         description: courseDetails.description,
         price: parseFloat(courseDetails.price),
-        category: ["dod"],
-        // thumbnail: courseDetails.thumbnail,
-        // isPublished: courseDetails.isPublished,
-        // learningObjectives: learningObjectives.map(lo => ({
-        //   title: lo.title,
-        //   description: lo.description
-        // })),
+        category: courseDetails.category.map((cat) => cat.name),
+        isPublished: courseDetails.isPublished,
         modules: modules.map((module) => ({
           title: module.title,
           description: module.description,
           lessons: module.lessons.map((lesson) => ({
             title: lesson.title,
-            description: lesson.description || "kdpd",
+            description: lesson.description || "",
             duration: lesson.duration || "0",
-            // videoUrl: lesson.videoUrl
           })),
-          quiz: module.quiz
-            ? [
-                {
-                  questions: module.quiz.questions.map((question) => ({
-                    question: question.question,
-                    options: question.options.map((option) => ({
-                      value: option.value,
-                      answer: option.answer,
+          quiz:
+            module.quiz && module.quiz[0]
+              ? [
+                  {
+                    questions: module.quiz[0].questions.map((question) => ({
+                      question: question.question,
+                      options: question.options.map((option) => ({
+                        value: option.value,
+                        answer: option.answer || false,
+                      })),
                     })),
-                  })),
-                },
-              ]
-            : null,
+                  },
+                ]
+              : [],
         })),
       };
 
-      const course = await api.createCourse(body, userToken);
-
-      console.log(course?.data.modules);
-
-      console.log("here");
-      const res = await updateVideosInAPI(
-        course?.data.modules,
-        videoUrl,
-        userToken,
-        course?.data.id
+      console.log(
+        "Creating course with body:",
+        JSON.stringify(courseBody, null, 2)
       );
+      const course = await api.createCourse(courseBody, userToken);
 
-      console.log(course?.data.id, "dess");
+      if (!course || !course.id) {
+        throw new Error("Failed to create course: No course ID received");
+      }
 
-      const res2 = await api.uploadCourseImage(
-        course?.data.id,
-        userToken,
-        imageUrl
-      );
+      const courseId = course.id;
+      console.log("Course created with ID:", courseId);
 
-      console.log(res2, "res");
+      // Step 2: Upload course image if exists
+      if (courseDetails.thumbnail) {
+        try {
+          const imageFormData = new FormData();
+          const imageUri = courseDetails.thumbnail;
+          const imageName = imageUri.split("/").pop() || "image.jpg";
 
-      Alert.alert("Success", "Course published successfully!");
+          const blob = await convertUriToBlob(imageUri);
+          imageFormData.append("image", blob, imageName);
 
-      setCourseDetails({
-        name: "",
-        description: "",
-        price: "",
-        category: [],
-        isPublished: false,
-        thumbnail: null,
-      });
-      setLearningObjectives([{ id: "1", title: "", description: "" }]);
+          console.log("Uploading course image...");
+          await api.uploadCourseImage(courseId, userToken, imageFormData);
+          console.log("Course image uploaded successfully");
+        } catch (error) {
+          console.error("Error uploading course image:", error);
+          // Don't throw here, continue with video uploads
+        }
+      }
 
-      setCourseStep("details");
-      setModules([]);
-      setImageUrl(null);
-      setVideoUrl([]);
-      router.push("/instructor/(tabs)/manage-courses");
-    } catch (error) {
-      console.error("Error publishing course:", error);
-      Alert.alert("Error", "Failed to publish course. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  const updateVideosInAPI = async (
-    modules: { id: string; lessons: { id: string }[] }[],
-    videoUrls: string[],
-    userToken: string,
-    courseId: string
-  ) => {
-    try {
-      console.log("called");
+      // Step 3: Upload videos for each lesson using the created course's module and lesson IDs
       for (const module of modules) {
-        const moduleId = module.id; // Get module ID
+        const createdModule = course.modules.find(
+          (m: Module) => m.title === module.title
+        );
 
-        for (let i = 0; i < module.lessons?.length; i++) {
-          const lessonId = module.lessons[i].id; // Get lesson ID
-          const videoUrl = videoUrls[i] || null; // Ensure we have a corresponding video
-
-          console.log(videoUrl, "video");
-          if (videoUrl) {
-            //  console.log(videoUrl, "calledhere ")
-
-            const res = await api.uploadCourseVideo(
-              lessonId,
-              userToken,
-              courseId,
-              moduleId,
-              videoUrl
+        if (createdModule) {
+          for (const lesson of module.lessons) {
+            const createdLesson = createdModule.lessons.find(
+              (l: Lesson) => l.title === lesson.title
             );
 
-            console.log(res, "udush");
-            return res;
+            if (createdLesson && lesson.video_link) {
+              const videoFormData = videoUrl.find((formData) => {
+                const videoFile = formData.get("video");
+                if (videoFile instanceof File) {
+                  return videoFile.name === lesson.video_link.split("/").pop();
+                }
+                return false;
+              });
+
+              if (videoFormData) {
+                console.log("Uploading video for lesson:", createdLesson.id);
+                await api.uploadLessonVideo(
+                  courseId,
+                  createdModule.id,
+                  createdLesson.id,
+                  videoFormData,
+                  userToken
+                );
+              }
+            }
           }
         }
       }
 
-      Alert.alert("Success", "All videos updated in API!");
-    } catch (error) {
-      console.error("Error updating videos in API:", error.response?.data);
-      console.error(
-        "Error publishing course:",
-        error.response?.data.detail[0].loc
+      Alert.alert("Success", "Course created successfully!");
+      router.replace("/instructor/(tabs)/manage-courses");
+    } catch (error: any) {
+      console.error("Error creating course:", error);
+      Alert.alert(
+        "Error",
+        error?.message || "Failed to create course. Please try again."
       );
-      Alert.alert("Error", "Failed to update videos. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -550,14 +548,7 @@ export default function CourseManagementScreen() {
   };
   // Module and lesson management
   const addModule = () => {
-    const newModule: Module = {
-      id: Date.now().toString(),
-      title: `Module ${modules?.length + 1}`,
-      description: "",
-      lessons: [],
-      quiz: null,
-    };
-
+    const newModule = createNewModule();
     setModules([...modules, newModule]);
     setExpandedModule(newModule.id);
 
@@ -567,7 +558,11 @@ export default function CourseManagementScreen() {
     }, 100);
   };
 
-  const updateModule = (moduleId: string, field: keyof Module, value: any) => {
+  const updateModule = (
+    moduleId: string,
+    field: keyof ExtendedModule,
+    value: any
+  ) => {
     setModules(
       modules.map((module) =>
         module.id === moduleId ? { ...module, [field]: value } : module
@@ -598,14 +593,7 @@ export default function CourseManagementScreen() {
   const addLesson = (moduleId: string) => {
     const module = modules.find((m) => m.id === moduleId);
     if (module) {
-      const newLesson: Lesson = {
-        id: Date.now().toString(),
-        title: `Lesson ${module.lessons?.length + 1}`,
-        description: "",
-        duration: "",
-        videoUrl: null,
-      };
-
+      const newLesson = createNewLesson(module.id);
       updateModule(moduleId, "lessons", [...module.lessons, newLesson]);
     }
   };
@@ -641,19 +629,21 @@ export default function CourseManagementScreen() {
     if (module) {
       const newQuiz: Quiz = {
         id: Date.now().toString(),
+        module_id: moduleId,
         questions: [
           {
             id: Date.now().toString(),
             question: "",
+            quiz_id: Date.now().toString(),
             options: [
-              { id: "1", value: "", answer: false },
-              { id: "2", value: "", answer: false },
+              { id: "1", value: "" },
+              { id: "2", value: "" },
             ],
           },
         ],
       };
 
-      updateModule(moduleId, "quiz", newQuiz);
+      updateModule(moduleId, "quiz", [newQuiz]);
     }
   };
 
@@ -663,122 +653,124 @@ export default function CourseManagementScreen() {
 
   const addQuizQuestion = (moduleId: string) => {
     const module = modules.find((m) => m.id === moduleId);
-    if (module && module.quiz) {
-      const newQuestion: QuizQuestion = {
+    if (module && module.quiz && module.quiz[0]) {
+      const newQuestion: Question = {
         id: Date.now().toString(),
         question: "",
+        quiz_id: module.quiz[0].id || "",
         options: [
           { id: "1", value: "", answer: false },
           { id: "2", value: "", answer: false },
         ],
       };
 
-      const updatedQuiz = {
-        ...module.quiz,
-        questions: [...module.quiz.questions, newQuestion],
-      };
+      const updatedQuiz = [
+        {
+          ...module.quiz[0],
+          questions: [...(module.quiz[0].questions || []), newQuestion],
+        },
+      ];
 
-      updateModule(moduleId, "quiz", updatedQuiz);
+      handleQuizUpdate(moduleId, updatedQuiz);
     }
   };
 
   const updateQuizQuestion = (
     moduleId: string,
     questionId: string,
-    field: keyof QuizQuestion,
-    value: any
+    field: keyof Question,
+    value: string | Option[]
   ) => {
     const module = modules.find((m) => m.id === moduleId);
-    if (module && module.quiz) {
-      const updatedQuestions = module.quiz.questions.map((question) =>
+    if (module && module.quiz && module.quiz[0]) {
+      const quiz = module.quiz[0];
+      const updatedQuestions = quiz.questions.map((question: Question) =>
         question.id === questionId ? { ...question, [field]: value } : question
       );
 
-      const updatedQuiz = {
-        ...module.quiz,
+      const updatedQuiz: Quiz = {
+        ...quiz,
         questions: updatedQuestions,
       };
 
-      updateModule(moduleId, "quiz", updatedQuiz);
+      updateModule(moduleId, "quiz", [updatedQuiz]);
     }
   };
 
   const removeQuizQuestion = (moduleId: string, questionId: string) => {
     const module = modules.find((m) => m.id === moduleId);
-    if (module && module.quiz) {
-      const updatedQuestions = module.quiz.questions.filter(
+    if (module && module.quiz && module.quiz[0]) {
+      const updatedQuestions = module.quiz[0].questions.filter(
         (question) => question.id !== questionId
       );
 
-      const updatedQuiz = {
-        ...module.quiz,
+      const updatedQuiz: Quiz = {
+        ...module.quiz[0],
         questions: updatedQuestions,
       };
 
-      updateModule(moduleId, "quiz", updatedQuiz);
+      updateModule(moduleId, "quiz", [updatedQuiz]);
     }
   };
 
   const addQuizOption = (moduleId: string, questionId: string) => {
     const module = modules.find((m) => m.id === moduleId);
-    if (module && module.quiz) {
-      const question = module.quiz.questions.find((q) => q.id === questionId);
+    if (module && module.quiz && module.quiz[0]) {
+      const quiz = module.quiz[0];
+      const question = quiz.questions.find(
+        (q: Question) => q.id === questionId
+      );
       if (question) {
-        const newOption: QuizOption = {
+        const newOption: Option = {
           id: Date.now().toString(),
           value: "",
-          answer: false,
         };
 
         const updatedOptions = [...question.options, newOption];
 
-        const updatedQuestions = module.quiz.questions.map((q) =>
+        const updatedQuestions = quiz.questions.map((q: Question) =>
           q.id === questionId ? { ...q, options: updatedOptions } : q
         );
 
-        const updatedQuiz = {
-          ...module.quiz,
+        const updatedQuiz: Quiz = {
+          ...quiz,
           questions: updatedQuestions,
         };
 
-        updateModule(moduleId, "quiz", updatedQuiz);
+        updateModule(moduleId, "quiz", [updatedQuiz]);
       }
     }
   };
 
+  // Update the updateQuizOption function to check completion after quiz update
   const updateQuizOption = (
     moduleId: string,
     questionId: string,
     optionId: string,
-    field: keyof QuizOption,
-    value: any
+    field: keyof Option,
+    value: string
   ) => {
     const module = modules.find((m) => m.id === moduleId);
-    if (module && module.quiz) {
-      const question = module.quiz.questions.find((q) => q.id === questionId);
+    if (module && module.quiz && module.quiz[0]) {
+      const quiz = module.quiz[0];
+      const question = quiz.questions.find(
+        (q: Question) => q.id === questionId
+      );
       if (question) {
-        const updatedOptions = question.options.map((option) =>
+        const updatedOptions = question.options.map((option: Option) =>
           option.id === optionId ? { ...option, [field]: value } : option
         );
 
-        // If we're setting this option as the answer, make sure other options are not answers
-        let finalOptions = updatedOptions;
-        if (field === "answer" && value === true) {
-          finalOptions = updatedOptions.map((option) =>
-            option.id === optionId ? option : { ...option, answer: false }
-          );
-        }
-
-        const updatedQuestions = module.quiz.questions.map((q) =>
-          q.id === questionId ? { ...q, options: finalOptions } : q
+        const updatedQuestions = quiz.questions.map((q: Question) =>
+          q.id === questionId ? { ...q, options: updatedOptions } : q
         );
 
-        const updatedQuiz = {
-          ...module.quiz,
+        const updatedQuiz: Quiz = {
+          ...quiz,
           questions: updatedQuestions,
         };
 
-        updateModule(moduleId, "quiz", updatedQuiz);
+        updateModule(moduleId, "quiz", [updatedQuiz]);
       }
     }
   };
@@ -789,29 +781,32 @@ export default function CourseManagementScreen() {
     optionId: string
   ) => {
     const module = modules.find((m) => m.id === moduleId);
-    if (module && module.quiz) {
-      const question = module.quiz.questions.find((q) => q.id === questionId);
+    if (module && module.quiz && module.quiz[0]) {
+      const quiz = module.quiz[0];
+      const question = quiz.questions.find(
+        (q: Question) => q.id === questionId
+      );
       if (question) {
         // Don't allow removing if there are only 2 options
-        if (question.options?.length <= 2) {
-          Alert.alert("Error", "A question must have at least 2 options.");
+        if (question.options.length <= 2) {
+          Alert.alert("Error", "A question must have at least 2 options");
           return;
         }
 
         const updatedOptions = question.options.filter(
-          (option) => option.id !== optionId
+          (option: Option) => option.id !== optionId
         );
 
-        const updatedQuestions = module.quiz.questions.map((q) =>
+        const updatedQuestions = quiz.questions.map((q: Question) =>
           q.id === questionId ? { ...q, options: updatedOptions } : q
         );
 
-        const updatedQuiz = {
-          ...module.quiz,
+        const updatedQuiz: Quiz = {
+          ...quiz,
           questions: updatedQuestions,
         };
 
-        updateModule(moduleId, "quiz", updatedQuiz);
+        updateModule(moduleId, "quiz", [updatedQuiz]);
       }
     }
   };
@@ -820,29 +815,35 @@ export default function CourseManagementScreen() {
   const addCategory = () => {
     if (!categoryInput.trim()) return;
 
-    if (!courseDetails.category.includes(categoryInput)) {
+    const newCategory: Category = { name: categoryInput.trim() };
+    if (!courseDetails.category.some((cat) => cat.name === newCategory.name)) {
       setCourseDetails({
         ...courseDetails,
-        category: [...courseDetails.category, categoryInput],
+        category: [...courseDetails.category, newCategory],
       });
     }
 
     setCategoryInput("");
   };
 
-  const removeCategory = (category: string) => {
+  const removeCategory = (categoryToRemove: Category) => {
     setCourseDetails({
       ...courseDetails,
-      category: courseDetails.category.filter((c) => c !== category),
+      category: courseDetails.category.filter(
+        (cat) => cat.name !== categoryToRemove.name
+      ),
     });
   };
 
   // Learning objectives management
   const addLearningObjective = () => {
-    const newObjective: LearningObjective = {
+    const newObjective: Lesson = {
       id: Date.now().toString(),
       title: "",
       description: "",
+      duration: "",
+      module_id: "",
+      video_link: "",
     };
 
     setLearningObjectives([...learningObjectives, newObjective]);
@@ -850,7 +851,7 @@ export default function CourseManagementScreen() {
 
   const updateLearningObjective = (
     id: string,
-    field: keyof LearningObjective,
+    field: keyof Lesson,
     value: string
   ) => {
     setLearningObjectives(
@@ -868,6 +869,285 @@ export default function CourseManagementScreen() {
 
     setLearningObjectives(
       learningObjectives.filter((objective) => objective.id !== id)
+    );
+  };
+
+  // Function to handle quiz updates
+  const handleQuizUpdate = (moduleId: string, updatedQuiz: Quiz[]) => {
+    updateModule(moduleId, "quiz", updatedQuiz);
+  };
+
+  // Function to add a new question to a quiz
+  const addQuestionToQuiz = (moduleId: string) => {
+    const module = modules.find((m) => m.id === moduleId);
+    if (!module) return;
+
+    const newQuestion: Question = {
+      id: Date.now().toString(),
+      question: "",
+      quiz_id: module.quiz?.[0]?.id || "",
+      options: [],
+    };
+
+    const updatedQuiz = module.quiz
+      ? [
+          {
+            ...module.quiz[0],
+            questions: [...(module.quiz[0].questions || []), newQuestion],
+          },
+        ]
+      : [
+          {
+            id: Date.now().toString(),
+            module_id: moduleId,
+            questions: [newQuestion],
+          },
+        ];
+
+    handleQuizUpdate(moduleId, updatedQuiz);
+  };
+
+  // Function to render quiz questions
+  const renderQuizQuestions = (module: ExtendedModule) => {
+    if (!module.quiz || !module.quiz[0]) return null;
+
+    return module.quiz[0].questions.map(
+      (question: Question, qIndex: number) => (
+        <View key={question.id} style={styles.questionContainer}>
+          <View style={styles.questionHeader}>
+            <Text style={styles.questionNumber}>Question {qIndex + 1}</Text>
+            <TouchableOpacity
+              onPress={() => removeQuizQuestion(module.id, question.id)}
+              style={styles.removeButton}
+            >
+              <X size={20} color="#FF4444" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              value={question.question}
+              onChangeText={(text) =>
+                updateQuizQuestion(module.id, question.id, "question", text)
+              }
+              placeholder="Enter question"
+            />
+          </View>
+
+          <Text style={styles.optionsLabel}>Options</Text>
+
+          {question.options.map((option: Option) => (
+            <View key={option.id} style={styles.optionContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.optionRadio,
+                  option.answer && styles.optionRadioSelected,
+                ]}
+                onPress={() =>
+                  updateQuizOption(
+                    module.id,
+                    question.id,
+                    option.id,
+                    "answer",
+                    String(!option.answer)
+                  )
+                }
+              >
+                {option.answer && <View style={styles.optionRadioInner} />}
+              </TouchableOpacity>
+              <TextInput
+                style={styles.optionInput}
+                value={option.value}
+                onChangeText={(text) =>
+                  updateQuizOption(
+                    module.id,
+                    question.id,
+                    option.id,
+                    "value",
+                    text
+                  )
+                }
+                placeholder={`Option ${option.id}`}
+              />
+              <TouchableOpacity
+                onPress={() =>
+                  removeQuizOption(module.id, question.id, option.id)
+                }
+                style={styles.removeOptionButton}
+              >
+                <X size={16} color="#FF4444" />
+              </TouchableOpacity>
+            </View>
+          ))}
+
+          <TouchableOpacity
+            style={styles.addOptionButton}
+            onPress={() => addQuizOption(module.id, question.id)}
+          >
+            <Plus size={16} color="#4169E1" />
+            <Text style={styles.addOptionButtonText}>Add Option</Text>
+          </TouchableOpacity>
+        </View>
+      )
+    );
+  };
+
+  // Function to render lesson video
+  const renderLessonVideo = (lesson: Lesson, moduleId: string) => {
+    return (
+      <View style={styles.videoContainer}>
+        <Text style={styles.label}>Video</Text>
+        {lesson.video_link ? (
+          <View style={styles.videoPreviewContainer}>
+            <View style={styles.videoPreview}>
+              <Video size={24} color="#4169E1" />
+              <Text
+                style={styles.videoUrlText}
+                numberOfLines={1}
+                ellipsizeMode="middle"
+              >
+                {lesson.video_link}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.changeVideoButton}
+              onPress={() => pickVideo(moduleId, lesson.id)}
+            >
+              <Text style={styles.changeVideoButtonText}>Change</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.uploadVideoButton}
+            onPress={() => pickVideo(moduleId, lesson.id)}
+          >
+            <Video size={20} color="#4169E1" />
+            <Text style={styles.uploadVideoButtonText}>Upload Video</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  // Function to render quiz info
+  const renderQuizInfo = (module: ExtendedModule) => {
+    return (
+      <>
+        <Text style={styles.previewSubtitle}>Quiz:</Text>
+        {!module.quiz || !module.quiz[0] ? (
+          <TouchableOpacity
+            style={styles.addQuestionButton}
+            onPress={() => addQuiz(module.id)}
+          >
+            <Plus size={20} color="#4169E1" />
+            <Text style={styles.addQuestionButtonText}>Add Quiz</Text>
+          </TouchableOpacity>
+        ) : (
+          <>
+            <Text style={styles.previewQuizInfo}>
+              {module.quiz[0].questions.length} question
+              {module.quiz[0].questions.length !== 1 ? "s" : ""}
+            </Text>
+            {module.quiz[0].questions.map(
+              (question: Question, qIndex: number) => (
+                <View key={question.id} style={styles.questionContainer}>
+                  <View style={styles.questionHeader}>
+                    <Text style={styles.questionNumber}>
+                      Question {qIndex + 1}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => removeQuizQuestion(module.id, question.id)}
+                      style={styles.removeButton}
+                    >
+                      <X size={20} color="#FF4444" />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      value={question.question}
+                      onChangeText={(text) =>
+                        updateQuizQuestion(
+                          module.id,
+                          question.id,
+                          "question",
+                          text
+                        )
+                      }
+                      placeholder="Enter question"
+                    />
+                  </View>
+
+                  <Text style={styles.optionsLabel}>Options</Text>
+
+                  {question.options.map((option: Option) => (
+                    <View key={option.id} style={styles.optionContainer}>
+                      <TouchableOpacity
+                        style={[
+                          styles.optionRadio,
+                          option.answer && styles.optionRadioSelected,
+                        ]}
+                        onPress={() =>
+                          updateQuizOption(
+                            module.id,
+                            question.id,
+                            option.id,
+                            "answer",
+                            String(!option.answer)
+                          )
+                        }
+                      >
+                        {option.answer && (
+                          <View style={styles.optionRadioInner} />
+                        )}
+                      </TouchableOpacity>
+                      <TextInput
+                        style={styles.optionInput}
+                        value={option.value}
+                        onChangeText={(text) =>
+                          updateQuizOption(
+                            module.id,
+                            question.id,
+                            option.id,
+                            "value",
+                            text
+                          )
+                        }
+                        placeholder={`Option ${option.id}`}
+                      />
+                      <TouchableOpacity
+                        onPress={() =>
+                          removeQuizOption(module.id, question.id, option.id)
+                        }
+                        style={styles.removeOptionButton}
+                      >
+                        <X size={16} color="#FF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+
+                  <TouchableOpacity
+                    style={styles.addOptionButton}
+                    onPress={() => addQuizOption(module.id, question.id)}
+                  >
+                    <Plus size={16} color="#4169E1" />
+                    <Text style={styles.addOptionButtonText}>Add Option</Text>
+                  </TouchableOpacity>
+                </View>
+              )
+            )}
+            <TouchableOpacity
+              style={styles.addQuestionButton}
+              onPress={() => addQuestionToQuiz(module.id)}
+            >
+              <Plus size={20} color="#4169E1" />
+              <Text style={styles.addQuestionButtonText}>Add Question</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </>
     );
   };
 
@@ -1069,9 +1349,9 @@ export default function CourseManagementScreen() {
         </View>
 
         <View style={styles.categoriesContainer}>
-          {courseDetails.category.map((category, index) => (
+          {courseDetails.category.map((category: Category, index: number) => (
             <View key={index} style={styles.categoryTag}>
-              <Text style={styles.categoryTagText}>{category}</Text>
+              <Text style={styles.categoryTagText}>{category.name}</Text>
               <TouchableOpacity onPress={() => removeCategory(category)}>
                 <X size={16} color="#666" />
               </TouchableOpacity>
@@ -1084,7 +1364,7 @@ export default function CourseManagementScreen() {
         <Text style={styles.label}>Course Thumbnail</Text>
         <TouchableOpacity
           style={styles.thumbnailButton}
-          onPress={() => pickImage("course")}
+          onPress={() => handleImagePick("course")}
         >
           {courseDetails.thumbnail ? (
             <Image
@@ -1282,39 +1562,7 @@ export default function CourseManagementScreen() {
                     </View>
 
                     <View style={styles.videoContainer}>
-                      <Text style={styles.label}>Video</Text>
-                      {videoUrl?.length > 0 ? (
-                        <View style={styles.videoPreviewContainer}>
-                          <View style={styles.videoPreview}>
-                            <Video size={24} color="#4169E1" />
-                            <Text
-                              style={styles.videoUrlText}
-                              numberOfLines={1}
-                              ellipsizeMode="middle"
-                            >
-                              {lesson.videoUrl}
-                            </Text>
-                          </View>
-                          <TouchableOpacity
-                            style={styles.changeVideoButton}
-                            onPress={() => pickVideo(module.id, lesson.id)}
-                          >
-                            <Text style={styles.changeVideoButtonText}>
-                              Change
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          style={styles.uploadVideoButton}
-                          onPress={() => pickVideo(module.id, lesson.id)}
-                        >
-                          <Upload size={20} color="#4169E1" />
-                          <Text style={styles.uploadVideoButtonText}>
-                            Upload Video
-                          </Text>
-                        </TouchableOpacity>
-                      )}
+                      {renderLessonVideo(lesson, module.id)}
                     </View>
                   </View>
                 ))}
@@ -1329,136 +1577,7 @@ export default function CourseManagementScreen() {
 
               <View style={styles.contentSection}>
                 <Text style={styles.contentSectionTitle}>Quiz</Text>
-                {module.quiz ? (
-                  <View style={styles.quizContainer}>
-                    <View style={styles.quizHeader}>
-                      <FileQuestion size={20} color="#4169E1" />
-                      <Text style={styles.quizTitle}>Module Quiz</Text>
-                      <TouchableOpacity
-                        onPress={() => removeQuiz(module.id)}
-                        style={styles.removeButton}
-                      >
-                        <X size={20} color="#FF4444" />
-                      </TouchableOpacity>
-                    </View>
-
-                    {module.quiz.questions.map((question, qIndex) => (
-                      <View key={question.id} style={styles.questionContainer}>
-                        <View style={styles.questionHeader}>
-                          <Text style={styles.questionNumber}>
-                            Question {qIndex + 1}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() =>
-                              removeQuizQuestion(module.id, question.id)
-                            }
-                            style={styles.removeButton}
-                          >
-                            <X size={20} color="#FF4444" />
-                          </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.inputContainer}>
-                          <TextInput
-                            style={styles.input}
-                            value={question.question}
-                            onChangeText={(text) =>
-                              updateQuizQuestion(
-                                module.id,
-                                question.id,
-                                "question",
-                                text
-                              )
-                            }
-                            placeholder="Enter question"
-                          />
-                        </View>
-
-                        <Text style={styles.optionsLabel}>
-                          Options (select correct answer)
-                        </Text>
-
-                        {question.options.map((option) => (
-                          <View key={option.id} style={styles.optionContainer}>
-                            <TouchableOpacity
-                              style={[
-                                styles.optionRadio,
-                                option.answer && styles.optionRadioSelected,
-                              ]}
-                              onPress={() =>
-                                updateQuizOption(
-                                  module.id,
-                                  question.id,
-                                  option.id,
-                                  "answer",
-                                  true
-                                )
-                              }
-                            >
-                              {option.answer && (
-                                <View style={styles.optionRadioInner} />
-                              )}
-                            </TouchableOpacity>
-                            <TextInput
-                              style={styles.optionInput}
-                              value={option.value}
-                              onChangeText={(text) =>
-                                updateQuizOption(
-                                  module.id,
-                                  question.id,
-                                  option.id,
-                                  "value",
-                                  text
-                                )
-                              }
-                              placeholder={`Option ${option.id}`}
-                            />
-                            <TouchableOpacity
-                              onPress={() =>
-                                removeQuizOption(
-                                  module.id,
-                                  question.id,
-                                  option.id
-                                )
-                              }
-                              style={styles.removeOptionButton}
-                            >
-                              <X size={16} color="#FF4444" />
-                            </TouchableOpacity>
-                          </View>
-                        ))}
-
-                        <TouchableOpacity
-                          style={styles.addOptionButton}
-                          onPress={() => addQuizOption(module.id, question.id)}
-                        >
-                          <Plus size={16} color="#4169E1" />
-                          <Text style={styles.addOptionButtonText}>
-                            Add Option
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-
-                    <TouchableOpacity
-                      style={styles.addQuestionButton}
-                      onPress={() => addQuizQuestion(module.id)}
-                    >
-                      <Plus size={20} color="#4169E1" />
-                      <Text style={styles.addQuestionButtonText}>
-                        Add Question
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.addContentButton}
-                    onPress={() => addQuiz(module.id)}
-                  >
-                    <Plus size={20} color="#4169E1" />
-                    <Text style={styles.addContentButtonText}>Add Quiz</Text>
-                  </TouchableOpacity>
-                )}
+                {renderQuizInfo(module)}
               </View>
             </View>
           )}
@@ -1508,9 +1627,11 @@ export default function CourseManagementScreen() {
         <View style={styles.previewRow}>
           <Text style={styles.previewLabel}>Categories:</Text>
           <View style={styles.previewCategoriesContainer}>
-            {courseDetails.category.map((category, index) => (
+            {courseDetails.category.map((category: Category, index: number) => (
               <View key={index} style={styles.previewCategoryTag}>
-                <Text style={styles.previewCategoryTagText}>{category}</Text>
+                <Text style={styles.previewCategoryTagText}>
+                  {category.name}
+                </Text>
               </View>
             ))}
           </View>
@@ -1568,24 +1689,11 @@ export default function CourseManagementScreen() {
                 <Text style={styles.previewLessonDescription}>
                   {lesson.description}
                 </Text>
-                {lesson.videoUrl && (
-                  <View style={styles.previewVideoContainer}>
-                    <Video size={16} color="#4169E1" />
-                    <Text style={styles.previewVideoText}>Video attached</Text>
-                  </View>
-                )}
+                {renderLessonVideo(lesson, module.id)}
               </View>
             ))}
 
-            {module.quiz && (
-              <>
-                <Text style={styles.previewSubtitle}>Quiz:</Text>
-                <Text style={styles.previewQuizInfo}>
-                  {module.quiz.questions?.length} question
-                  {module.quiz.questions?.length !== 1 ? "s" : ""}
-                </Text>
-              </>
-            )}
+            {renderQuizInfo(module)}
           </View>
         ))}
       </View>
@@ -1635,6 +1743,43 @@ export default function CourseManagementScreen() {
       </TouchableOpacity>
     </View>
   );
+
+  const resetForm = () => {
+    setCourseDetails({
+      id: "",
+      name: "",
+      description: "",
+      price: "",
+      category: [],
+      image_link: "",
+      instructor_id: "",
+      instructor: { fullname: "", image_link: "" },
+      average_rating: null,
+      created_at: "",
+      updated_at: "",
+      students: null,
+      discount: "",
+      modules: [],
+      enrolled: null,
+      rating: 0,
+      reviews: 0,
+      completionStatus: "",
+      percentComplete: "",
+      thumbnail: "",
+      isPublished: false,
+    });
+    setLearningObjectives([
+      {
+        id: "1",
+        title: "",
+        description: "",
+        duration: "",
+        module_id: "",
+        video_link: "",
+      },
+    ]);
+    setModules([]);
+  };
 
   return (
     <SafeAreaView style={styles.container}>

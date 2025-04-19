@@ -1,11 +1,90 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FacebookIcon, MailIcon, ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAlert } from '@/hooks/useAlert';
+import { getUserInfo, getUserLoginToken } from '@/lib/reducers/storeUserInfo';
+import { api } from '@/lib/actions/api';
+import { useEffect } from 'react';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 const SocialAuthScreen = () => {
+
+  const dispatch = useAppDispatch();
+  const { showAlert } = useAlert();
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: process.env.EXPO_PUBLIC_WEB_ID,
+      offlineAccess: true,
+      scopes: ["profile", "email"],
+      forceCodeForRefreshToken: false,
+      // iosClientId: process.env.EXPO_PUBLIC_IOS_ID,
+    });
+  }, []);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      // Trigger Google Sign In
+      const userInfo = await GoogleSignin.signIn();
+      console.log("User Info:", userInfo);
+
+      const { data } = userInfo;
+      if (!data?.idToken) {
+        Alert.alert("Error", "No idToken retrieved from Google Sign-in.");
+        return;
+      }
+
+      console.debug({ data });
+      const res = await api.googleSignIn(data.idToken, "student");
+      console.debug({ res });
+      const userRole = res?.data?.roles.map(
+        (e: { name: string }) => e.name
+      )?.[0] as "student" | "instructor";
+      const otherRole = res?.data?.roles.map(
+        (e: { name: string }) => e.name
+      )?.[1] as "student" | "instructor";
+
+      if (userRole  !== "instructor" && otherRole !== 'instructor') {
+        console.error({ otherRole, userRole });
+        Alert.alert(
+          "Error",
+          "You're not an instructor. Try logging in as a student."
+        );
+        return;
+      }
+
+      dispatch(getUserInfo(res?.data));
+      dispatch(getUserLoginToken(res?.data.token));
+      console.log(res, "data");
+
+      showAlert("success", "Account logged in successfully");
+
+      setTimeout(() => {
+        router.push({
+          pathname: "/instructor/(tabs)",
+        });
+      }, 500);
+    } catch (error: any) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        console.log("User cancelled the login flow");
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        console.log("Sign in is in progress already");
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert("Error", "Google Play Services not available or outdated.");
+      } else {
+        console.error("Error during Google sign in:", error);
+        Alert.alert(
+          "Authentication Error",
+          "Something went wrong with Google sign in."
+        );
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -28,7 +107,7 @@ const SocialAuthScreen = () => {
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={[styles.socialButton, styles.googleButton]}
-            onPress={() => console.log('Google sign in')}
+            onPress={handleGoogleSignIn}
           >
             <Ionicons name="logo-google" size={24} color="#4169E1" />
             <Text style={styles.socialButtonText}>Continue with Google</Text>

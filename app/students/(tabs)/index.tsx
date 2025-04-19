@@ -71,7 +71,10 @@ const HomeScreen = () => {
 
   const navigateToCourseDetails = (item: Course) => {
     dispatch(getCourseDetails(item));
-    router.push("/students/course-details");
+    router.push({
+      pathname: "/students/course-details",
+      params: { courseId: item.id },
+    });
   };
 
   return (
@@ -130,8 +133,8 @@ const HomeScreen = () => {
                   title={item.name}
                   author={item?.instructor?.fullname}
                   price={item.price}
-                  rating={+item.average_rating || 0}
-                  reviews={+item.average_rating || 0}
+                  rating={+item?.average_rating! || 0}
+                  reviews={+item?.average_rating! || 0}
                   image={item.image_link}
                   isBestseller={item.isBestseller}
                   onPress={() => navigateToCourseDetails(item)}
@@ -225,7 +228,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#4169E1",
     fontWeight: "600",
-    marginTop: 10
+    marginTop: 10,
+    marginRight: "auto",
+    marginLeft: "auto",
   },
   noCoursesContainer: {
     flex: 1,

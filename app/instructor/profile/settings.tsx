@@ -50,8 +50,9 @@ const ProfileSettingsScreen = () => {
       formData.append("image", blob, fileName);
 
       const res = await api.uploadUserImage(userData?.id, userToken, formData);
-      dispatch(getUserInfo(res?.data));
-    } catch (error) {
+      dispatch(
+        getUserInfo({ ...userData, image_link: res?.data?.image_link || "" })
+      );    } catch (error) {
       console.error("Upload error:", error);
     }
   };

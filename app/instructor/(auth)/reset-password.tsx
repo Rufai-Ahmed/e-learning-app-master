@@ -29,6 +29,7 @@ const ResetPasswordScreen = () => {
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
   const { control, handleSubmit, watch } = useForm<FormData>();
   const password = watch("password") || "";
+  const confirmPassword = watch("confirmPassword") || "";
   const params = useLocalSearchParams();
   const { email, code } = params;
   const { showAlert } = useAlert();
@@ -44,7 +45,8 @@ const ResetPasswordScreen = () => {
     },
     validate: {
       hasUpperCase: (value: string) =>
-        /[A-Z]/.test(value) || "Password must contain at least one uppercase letter",
+        /[A-Z]/.test(value) ||
+        "Password must contain at least one uppercase letter",
       hasNumber: (value: string) =>
         /\d/.test(value) || "Password must contain at least one number",
       hasSpecialChar: (value: string) =>
@@ -68,6 +70,7 @@ const ResetPasswordScreen = () => {
         email,
         code,
         password,
+        confirm_password: confirmPassword,
       };
 
       console.log(body);
@@ -84,7 +87,9 @@ const ResetPasswordScreen = () => {
         });
       }, 500);
     } catch (err) {
-      console.log(err.response?.data);
+      console.log(err.response?.data, 'res');
+      if (err.response?.data?.message?.includes("Invalid Code, Please Request A New Code"))
+        router.push("/instructor/(auth)/forgot-password");
       if (err.response?.data.detail) {
         showAlert("error", err.response?.data.detail);
       } else if (err.message) {
@@ -155,28 +160,36 @@ const ResetPasswordScreen = () => {
                 />
                 {/* Password Requirements Indicators */}
                 <View style={styles.passwordRequirements}>
-                  <Text style={[
-                    styles.requirementText,
-                    meetsLength && styles.requirementMet
-                  ]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      meetsLength && styles.requirementMet,
+                    ]}
+                  >
                     • Minimum 8 characters {meetsLength ? "✓" : "✗"}
                   </Text>
-                  <Text style={[
-                    styles.requirementText,
-                    hasUpperCase && styles.requirementMet
-                  ]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      hasUpperCase && styles.requirementMet,
+                    ]}
+                  >
                     • Uppercase letter {hasUpperCase ? "✓" : "✗"}
                   </Text>
-                  <Text style={[
-                    styles.requirementText,
-                    hasNumber && styles.requirementMet
-                  ]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      hasNumber && styles.requirementMet,
+                    ]}
+                  >
                     • Number {hasNumber ? "✓" : "✗"}
                   </Text>
-                  <Text style={[
-                    styles.requirementText,
-                    hasSpecialChar && styles.requirementMet
-                  ]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      hasSpecialChar && styles.requirementMet,
+                    ]}
+                  >
                     • Special character {hasSpecialChar ? "✓" : "✗"}
                   </Text>
                 </View>

@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from "react";
+import { useAlert } from "@/hooks/useAlert";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
+import { api } from "@/lib/actions/api";
+import { Course } from "@/lib/interfaces/course";
+import { getCourseDetails } from "@/lib/reducers/storeUserCourses";
+import { useFocusEffect, useRouter } from "expo-router";
+import { Settings } from "lucide-react-native";
+import React, { useCallback, useState } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Settings } from "lucide-react-native";
-import { useAlert } from "@/hooks/useAlert";
-import { api } from "@/lib/actions/api";
-import { useAppSelector } from "@/hooks/useAppSelector";
-import { useRouter } from "expo-router";
-import { getCourseDetails } from "@/lib/reducers/storeUserCourses";
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { Course } from "@/lib/interfaces/course";
 
 const LearnScreen = () => {
   const [loading, setLoading] = useState(true);
@@ -25,24 +25,28 @@ const LearnScreen = () => {
   const userToken = useAppSelector((state) => state.user.userLoginToken);
   const router = useRouter();
   const dispatch = useAppDispatch();
+  
+  useFocusEffect(
+    useCallback(() => {
+      const fetchCourses = async () => {
+        setLoading(true);
+        try {
+          const response = await api.getUserCourses(userData?.id, userToken);
+          setCourses(response?.data);
+        } catch (error) {
+          console.error("Error fetching courses:", error);
+          showAlert("error", "Failed to load courses. Please try again.");
+        } finally {
+          setLoading(false);
+        }
+      };
 
-  useEffect(() => {
-    fetchCourses();
-  }, []);
+      fetchCourses();
 
-  const fetchCourses = async () => {
-    setLoading(true);
-    try {
-      const response = await api.getUserCourses(userData?.id, userToken);
-      setCourses(response?.data);
-    } catch (error) {
-      console.error("Error fetching courses:", error);
-      showAlert("error", "Failed to load courses. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+    }, [userData?.id, userToken, showAlert])
+  );
+  
+  
   const handleExploreCourses = () => {
     router.push("/students/search");
   };

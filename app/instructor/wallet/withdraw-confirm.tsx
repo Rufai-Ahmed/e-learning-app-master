@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,9 @@ import {
   CheckCircle2,
 } from "lucide-react-native";
 import { api } from "@/lib/actions/api";
+import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAlert } from "@/hooks/useAlert";
+import React from "react";
 
 export default function WithdrawConfirmScreen() {
   const params = useLocalSearchParams();
@@ -28,27 +31,57 @@ export default function WithdrawConfirmScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [accountName, setAccountName] = useState<string>("");
   const [verifying, setVerifying] = useState<boolean>(false);
+  const { showAlert } = useAlert();
+  const userToken = useAppSelector((state) => state.user.userLoginToken);
+  const userData = useAppSelector((state) => state.user.user);
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    if (!accountName) {
+      showAlert("error", "Please wait for account verification to complete");
+      return;
+    }
+
     setIsProcessing(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsProcessing(false);
-      Alert.alert(
-        "Success",
-        "Your withdrawal request has been submitted successfully",
-        [
-          {
-            text: "OK",
-            onPress: () =>
-              router.push({
-                pathname: "/instructor",
-              }),
-          },
-        ]
+    try {
+      // First, add or update the bank account
+      await api.addInstructorBankAccount(
+        userData.id,
+        {
+          account_bank: bank.code,
+          account_number: accountNumber,
+          currency: "NGN",
+        },
+        userToken
       );
-    }, 2000);
+
+      // Then request the payout
+      await api.requestInstructorPayout(
+        userData.id,
+        {
+          amount: parseFloat(amount),
+        },
+        userToken
+      );
+
+      showAlert(
+        "success",
+        "Your withdrawal request has been submitted successfully"
+      );
+
+      // Navigate back to instructor dashboard
+      router.push({
+        pathname: "/instructor",
+      });
+    } catch (error: any) {
+      console.error("Error processing withdrawal:", error?.response?.data);
+      showAlert(
+        "error",
+        error?.response?.data?.message || "Failed to process withdrawal"
+      );
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   useEffect(() => {
@@ -65,7 +98,7 @@ export default function WithdrawConfirmScreen() {
           setAccountName(result?.account_name);
         } catch (error: any) {
           console.error("Error verifying account details:", error);
-          Alert.alert("Error", "Unable to verify account details.");
+          showAlert("error", "Unable to verify account details.");
         } finally {
           setVerifying(false);
         }

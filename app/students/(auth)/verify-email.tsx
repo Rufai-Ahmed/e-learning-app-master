@@ -45,12 +45,40 @@ const VerifyEmailScreen = () => {
   }, []);
 
   const handleOtpChange = (value: string, index: number) => {
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
+    if (index === 0 && value.length > 1) {
+      if (value.length >= 6) {
+        const otpArray = value.slice(0, 6).split("");
+        setOtp(otpArray);
+        inputRefs.current[5]?.focus();
+      } else {
+        const pastedOtp = value.split("");
+        const newOtp = [...otp];
 
-    if (value !== "" && index < 5) {
-      inputRefs.current[index + 1]?.focus();
+        pastedOtp.forEach((char, idx) => {
+          if (idx < 6) {
+            newOtp[idx] = char;
+          }
+        });
+
+        setOtp(newOtp);
+
+        const nextEmptyIndex = newOtp.findIndex(
+          (char, idx) => idx >= pastedOtp.length && char === ""
+        );
+        if (nextEmptyIndex !== -1) {
+          inputRefs.current[nextEmptyIndex]?.focus();
+        } else {
+          inputRefs.current[Math.min(pastedOtp.length, 5)]?.focus();
+        }
+      }
+    } else {
+      const newOtp = [...otp];
+      newOtp[index] = value;
+      setOtp(newOtp);
+
+      if (index < 5) {
+        inputRefs.current[index + 1]?.focus();
+      }
     }
   };
 
@@ -109,13 +137,14 @@ const VerifyEmailScreen = () => {
         code: otpString,
       };
 
-      const res = await api.verifyEmail(body);
+      if (type === "signup") {
+        const res = await api.verifyEmail(body);
 
-      console.log(res?.data.token);
+        console.log(res?.data.token);
 
-      dispatch(getUserLoginToken(res?.data.token));
-      showAlert("success", "OTP verified successfully");
-
+        dispatch(getUserLoginToken(res?.data.token));
+        showAlert("success", "OTP verified successfully");
+      }
       setTimeout(() => {
         if (type === "reset-password") {
           router.push({
@@ -172,7 +201,7 @@ const VerifyEmailScreen = () => {
                 onKeyPress={(e) => handleKeyPress(e, index)}
                 maxLength={1}
                 ref={(ref) => (inputRefs.current[index] = ref)}
-                keyboardType="number-pad"
+                keyboardType="default"
               />
             ))}
           </View>

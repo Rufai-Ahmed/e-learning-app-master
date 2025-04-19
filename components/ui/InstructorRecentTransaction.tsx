@@ -1,50 +1,83 @@
-import { View, Text, StyleSheet, FlatList } from "react-native"
-import { MaterialCommunityIcons } from "@expo/vector-icons"
-import { BlurView } from "expo-blur"
-import {Search} from "lucide-react-native"
+import { View, Text, StyleSheet, FlatList } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { Search } from "lucide-react-native";
 
-const transactionData = [
- /* { id: "1", type: "income", amount: 99.99, description: "Course Purchase", date: "2023-06-15" },
-  { id: "2", type: "expense", amount: 500.0, description: "Withdrawal", date: "2023-06-14" },
-  { id: "3", type: "income", amount: 149.99, description: "Course Purchase", date: "2023-06-13" },
-  { id: "4", type: "income", amount: 79.99, description: "Course Purchase",
-  date: "2023-06-12" },*/
-]
+interface Transaction {
+  status: string;
+  charge_id: string | null;
+  wallet_id: string;
+  amount: string;
+  payment_platform: string;
+  payer_id: string;
+  description: string;
+  created_at: string;
+  id: string;
+  currency: string;
+  course_id: string;
+  transaction_type: string;
+  payout_id: string | null;
+  updated_at: string;
+}
 
-const TransactionItem = ({ item }) => (
+interface RecentTransactionsProps {
+  transactions: Transaction[];
+}
+
+const TransactionItem = ({ item }: { item: Transaction }) => (
   <View style={styles.transactionItem}>
-    <View style={[styles.iconContainer, item.type === "income" ? styles.incomeIcon : styles.expenseIcon]}>
-      <MaterialCommunityIcons name={item.type === "income" ? "arrow-down" : "arrow-up"} size={24} color="#FFFFFF" />
+    <View
+      style={[
+        styles.iconContainer,
+        item.transaction_type === "credit"
+          ? styles.incomeIcon
+          : styles.expenseIcon,
+      ]}
+    >
+      <MaterialCommunityIcons
+        name={item.transaction_type === "credit" ? "arrow-down" : "arrow-up"}
+        size={24}
+        color="#FFFFFF"
+      />
     </View>
     <View style={styles.transactionInfo}>
       <Text style={styles.transactionDescription}>{item.description}</Text>
-      <Text style={styles.transactionDate}>{item.date}</Text>
+      <Text style={styles.transactionDate}>
+        {new Date(item.created_at).toLocaleDateString()}
+      </Text>
     </View>
-    <Text style={[styles.transactionAmount, item.type === "income" ? styles.incomeText : styles.expenseText]}>
-      ${item.amount.toFixed(2)}
+    <Text
+      style={[
+        styles.transactionAmount,
+        item.transaction_type === "credit"
+          ? styles.incomeText
+          : styles.expenseText,
+      ]}
+    >
+      {item.currency} {parseFloat(item.amount).toFixed(2)}
     </Text>
   </View>
-)
+);
 
-const RecentTransactions = () => {
+const RecentTransactions = ({ transactions }: RecentTransactionsProps) => {
   return (
     <BlurView intensity={50} tint="light" style={styles.container}>
       <Text style={styles.title}>Recent Transactions</Text>
       <FlatList
-        data={transactionData}
+        data={transactions}
         renderItem={({ item }) => <TransactionItem item={item} />}
         keyExtractor={(item) => item.id}
         scrollEnabled={false}
         ListEmptyComponent={() => (
-        <View style={{justifyContent:"center", alignItems:"center"}}>
-        <Search size={30} color="black" />
-        <Text> Transactions not found </Text>
-        </View>
+          <View style={{ justifyContent: "center", alignItems: "center" }}>
+            <Search size={30} color="black" />
+            <Text> Transactions not found </Text>
+          </View>
         )}
       />
     </BlurView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -98,7 +131,6 @@ const styles = StyleSheet.create({
   expenseText: {
     color: "#F56565",
   },
-})
+});
 
-export default RecentTransactions
-
+export default RecentTransactions;

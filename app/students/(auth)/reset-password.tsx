@@ -68,6 +68,7 @@ const ResetPasswordScreen = () => {
         email,
         code,
         password,
+        confirm_password: password,
       };
 
       console.log(body);
