@@ -727,7 +727,7 @@ export default function CourseDetailScreen() {
                     {module.description}
                   </Text>
                 )}
-                {module.lessons &&
+                { module.lessons &&
                   module.lessons.map((lesson) => (
                     <TouchableOpacity
                       key={lesson.id}
@@ -736,7 +736,7 @@ export default function CourseDetailScreen() {
                         isLessonCompleted(lesson.id) &&
                           styles.completedLessonItem,
                       ]}
-                      onPress={() => {
+                       onPress={() => {
                         const lessonParam = encodeURIComponent(
                           JSON.stringify(lesson)
                         );

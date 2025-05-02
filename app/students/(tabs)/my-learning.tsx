@@ -89,7 +89,7 @@ const LearnScreen = () => {
               <Text style={styles.courseAuthor}>
                 {item.instructor?.fullname || "Unknown Instructor"}
               </Text>
-              <Text style={styles.coursePrice}>${item.price}</Text>
+              <Text style={styles.coursePrice}>₦{item.price}</Text>
               <View style={styles.progressContainer}>
                 <Text style={styles.progressText}>
                   {item.completionStatus === "completed"

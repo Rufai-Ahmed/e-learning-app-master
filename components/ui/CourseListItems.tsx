@@ -35,7 +35,7 @@ export const CourseListItem = ({
           <StarRating rating={rating || 0} size={14} />
           <Text style={styles.reviews}>({reviews || 0})</Text>
         </View>
-        <Text style={styles.price}>$ {price}</Text>
+        <Text style={styles.price}>₦ {price}</Text>
         {/* {isBestseller && (
           <View style={styles.bestsellerTag}>
             <Text style={styles.bestsellerText}>Bestseller</Text>

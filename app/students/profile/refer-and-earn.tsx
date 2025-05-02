@@ -7,7 +7,7 @@ export default function ReferAndEarnScreen() {
   // Static/dummy values for demonstration; replace with real data when available.
   const referralCode = "A1SCHOOL123";
   const commissionRate = "10%"; // Commission per successful enrollment
-  const totalEarnings = "$0.00"; // Total commission earned so far
+  const totalEarnings = "₦0.00"; // Total commission earned so far
   const referralsCount = 0; // Number of successful referrals
 
   const handleShare = async () => {

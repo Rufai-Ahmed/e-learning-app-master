@@ -73,7 +73,7 @@ export const CourseHeader = () => {
           </Text>
         </View>
 
-        <Text style={styles.price}>$ {courseDetails?.price}</Text>
+        <Text style={styles.price}>₦ {courseDetails?.price}</Text>
 
         <TouchableOpacity onPress={buyCourse} style={styles.buyButton}>
           <Text style={styles.buyButtonText}>

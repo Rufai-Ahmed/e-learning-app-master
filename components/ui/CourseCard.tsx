@@ -36,7 +36,7 @@ export const CourseCard = ({
           <StarRating rating={rating} size={14} />
           <Text style={styles.reviews}>({reviews}) reviews</Text>
         </View>
-        <Text style={styles.price}>$ {price}</Text>
+        <Text style={styles.price}>₦ {price}</Text>
         {/* {isBestseller && (
           <View style={styles.bestsellerTag}>
             <Text style={styles.bestsellerText}>Bestseller</Text>

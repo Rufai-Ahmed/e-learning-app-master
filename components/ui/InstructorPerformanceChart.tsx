@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, Dimensions } from "react-native"
-import { LineChart } from "react-native-chart-kit"
+import { View, Text, StyleSheet, Dimensions } from "react-native";
+import { LineChart } from "react-native-chart-kit";
 
 const PerformanceChart = () => {
   const data = {
@@ -7,11 +7,11 @@ const PerformanceChart = () => {
     datasets: [
       {
         data: [20, 45, 28, 80, 99, 43],
-        color: (opacity = 1) => `rgba(65, 105, 225, ${opacity})`,
+        color: (opacity = 1) => `rgba(65, 105, 225, {opacity})`,
         strokeWidth: 2,
       },
     ],
-  }
+  };
 
   return (
     <View style={styles.container}>
@@ -39,8 +39,8 @@ const PerformanceChart = () => {
         style={styles.chart}
       />
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -64,7 +64,6 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     borderRadius: 16,
   },
-})
+});
 
-export default PerformanceChart
-
+export default PerformanceChart;

@@ -29,7 +29,7 @@ const WalletOverview = () => {
       <View style={styles.balanceSection}>
         <Text style={styles.balanceLabel}>Total Balance</Text>
         <Text
-        style={styles.balanceAmount}>${parseFloat(userData?.wallet?.balance).toLocaleString()}</Text>
+        style={styles.balanceAmount}>₦{parseFloat(userData?.wallet?.balance).toLocaleString()}</Text>
       </View>
     {/* <View style={styles.statsSection}>
       <View style={styles.statItem}>

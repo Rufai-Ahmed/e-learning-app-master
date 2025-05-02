@@ -9,7 +9,7 @@ export const RecommendedCourses = () => {
       author: "Academind by Maximilian Schwarzmüller",
       rating: 4.6,
       reviews: 224700,
-      price: "$79,900.00",
+      price: "₦79,900.00",
       image:
         "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/l4.jpg-uqHwNgJFt3giyKY2k3FTYLit5FMGXd.jpeg",
       bestseller: true,
@@ -19,7 +19,7 @@ export const RecommendedCourses = () => {
       author: "Maximilian Schwarzmüller",
       rating: 4.7,
       reviews: 21350,
-      price: "$99,900.00",
+      price: "₦99,900.00",
       image:
         "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/l4.jpg-uqHwNgJFt3giyKY2k3FTYLit5FMGXd.jpeg",
       bestseller: true,
@@ -29,7 +29,7 @@ export const RecommendedCourses = () => {
       author: "Jonas Schmedtmann",
       rating: 4.6,
       reviews: 26690,
-      price: "$99,900.00",
+      price: "₦99,900.00",
       image:
         "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/l4.jpg-uqHwNgJFt3giyKY2k3FTYLit5FMGXd.jpeg",
       bestseller: true,
