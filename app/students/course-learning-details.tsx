@@ -34,6 +34,9 @@ import {
   ViewStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDispatch, useSelector } from "react-redux";
+import { markLessonCompleted } from "@/lib/reducers/storeLessonProgress";
+import CertificateView from "./CertificateView";
 
 interface RootState {
   courses: {
@@ -257,6 +260,12 @@ export default function CourseDetailScreen() {
   }>({});
   const [loadingQuiz, setLoadingQuiz] = useState<string | null>(null);
   const [moduleQuizzes, setModuleQuizzes] = useState([]);
+  const dispatch = useDispatch();
+  const completedLessons = useSelector(
+    (state: any) => state.lessonProgress.completedLessons
+  );
+  const [certificateLoading, setCertificateLoading] = useState(false);
+  const [certificateData, setCertificateData] = useState<any>(null);
 
   const params = useLocalSearchParams<{
     action?: "markQuizCompleted";
@@ -382,7 +391,13 @@ export default function CourseDetailScreen() {
   };
 
   const isLessonCompleted = (lessonId: string) => {
-    return false;
+    return !!completedLessons[lessonId];
+  };
+
+  const isLessonUnlocked = (lessons: any[], idx: number) => {
+    if (idx === 0) return true;
+    const prevLessonId = lessons[idx - 1].id;
+    return isLessonCompleted(prevLessonId);
   };
 
   const markLessonAsCompleted = async (moduleId: string, lessonId: string) => {
@@ -548,6 +563,23 @@ export default function CourseDetailScreen() {
     }
   };
 
+  const handleGetCertificate = async () => {
+    if (!courseDetails?.id || !userLoginToken) return;
+    setCertificateLoading(true);
+    setCertificateData(null);
+    try {
+      const cert = await api.getCourseCertificate(
+        courseDetails.id,
+        userLoginToken
+      );
+      setCertificateData(cert);
+    } catch (err: any) {
+      showAlert("error", err?.message || "Failed to fetch certificate");
+    } finally {
+      setCertificateLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchCourseDetails();
   }, []);
@@ -639,9 +671,28 @@ export default function CourseDetailScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               style={styles.categoriesContainer}
+              contentContainerStyle={[
+                {
+                  height: "auto",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 8,
+                },
+              ]}
             >
+              <Text>Categories:</Text>
               {courseDetails.category.map((cat, index) => (
-                <View key={index} style={styles.categoryBadge}>
+                <View
+                  key={index}
+                  style={[
+                    styles.categoryBadge,
+                    {
+                      minHeight: 20,
+                      flexDirection: "row",
+                      alignItems: "center",
+                    },
+                  ]}
+                >
                   <Text style={styles.categoryText}>{cat.name}</Text>
                 </View>
               ))}
@@ -649,8 +700,137 @@ export default function CourseDetailScreen() {
           </View>
         );
       case "Curriculum":
+        // Flatten all lessons for progress
+        const allLessons =
+          courseDetails?.modules.flatMap((m: any) => m.lessons) || [];
+        const allCompleted =
+          allLessons.length > 0 &&
+          allLessons.every((lesson: any) => isLessonCompleted(lesson.id));
+        const currentLessonIdx = allLessons.findIndex(
+          (lesson: any) => !isLessonCompleted(lesson.id)
+        );
+        const currentLesson = allLessons[currentLessonIdx];
         return (
           <ScrollView style={styles.tabContent}>
+            {/* Progress Card */}
+            <View style={{ marginBottom: 24 }}>
+              {allCompleted ? (
+                <View
+                  style={[styles.moduleContainer, { alignItems: "center" }]}
+                >
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      fontWeight: "bold",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Course Completed
+                  </Text>
+                  <Text style={{ marginBottom: 16 }}>
+                    You've finished all lessons
+                  </Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.quizButton,
+                      {
+                        width: "auto",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      },
+                    ]}
+                    onPress={handleGetCertificate}
+                    disabled={certificateLoading}
+                  >
+                    {certificateLoading ? (
+                      <ActivityIndicator
+                        color="#fff"
+                        style={{ marginRight: 8 }}
+                      />
+                    ) : null}
+                    <Text style={styles.quizButtonText}>Get Certificate</Text>
+                  </TouchableOpacity>
+                  {certificateData && (
+                    <View style={{ marginTop: 16, alignItems: "center" }}>
+                      {certificateData.certificate_url ? (
+                        <Text
+                          style={{
+                            color: "#4169E1",
+                            textDecorationLine: "underline",
+                          }}
+                          onPress={() => {
+                            // Open certificate in browser
+                            if (certificateData.certificate_url) {
+                              window.open?.(
+                                certificateData.certificate_url,
+                                "_blank"
+                              );
+                            }
+                          }}
+                        >
+                          View/Download Certificate
+                        </Text>
+                      ) : (
+                        <Text
+                          selectable
+                          style={{ color: "#333", textAlign: "center" }}
+                        >
+                          {typeof certificateData === "string"
+                            ? certificateData
+                            : JSON.stringify(certificateData)}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+              ) : currentLesson ? (
+                <View
+                  style={[styles.moduleContainer, { alignItems: "center" }]}
+                >
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      fontWeight: "bold",
+                      marginBottom: 8,
+                    }}
+                  >
+                    {currentLessonIdx < 1
+                      ? "No lesson completed"
+                      : `Lesson ${currentLessonIdx} Completed`}
+                  </Text>
+                  {currentLessonIdx > 0 && (
+                    <Text style={{ marginBottom: 8 }}>
+                      You've finished the lesson.
+                    </Text>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.quizButton, { width: "auto" }]}
+                    onPress={() => {
+                      // Find next lesson in allLessons
+                      const nextLesson = allLessons[currentLessonIdx + 1];
+                      if (nextLesson) {
+                        const lessonParam = encodeURIComponent(
+                          JSON.stringify(nextLesson)
+                        );
+                        router.push({
+                          pathname: "/students/lesson-video",
+                          params: {
+                            lesson: lessonParam,
+                            moduleId: nextLesson.moduleId || "",
+                            courseId: course?.id,
+                          },
+                        });
+                      }
+                    }}
+                    disabled={!isLessonCompleted(currentLesson.id)}
+                  >
+                    <Text style={styles.quizButtonText}>Next</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </View>
+            {/* Modules and Lessons */}
             {courseDetails?.modules.map((module) => (
               <View key={module.id} style={styles.moduleContainer}>
                 <View style={styles.moduleHeader}>
@@ -727,39 +907,54 @@ export default function CourseDetailScreen() {
                     {module.description}
                   </Text>
                 )}
-                { module.lessons &&
-                  module.lessons.map((lesson) => (
-                    <TouchableOpacity
-                      key={lesson.id}
-                      style={[
-                        styles.lessonItem,
-                        isLessonCompleted(lesson.id) &&
-                          styles.completedLessonItem,
-                      ]}
-                       onPress={() => {
-                        const lessonParam = encodeURIComponent(
-                          JSON.stringify(lesson)
-                        );
-                        router.push({
-                          pathname: "/students/lesson-video",
-                          params: {
-                            lesson: lessonParam,
-                            moduleId: module.id,
-                            courseId: course?.id,
-                          },
-                        });
-                      }}
-                    >
-                      <Text style={styles.lessonTitle}>
-                        {lesson.title} ({lesson.duration || "0"} min)
-                      </Text>
-                      {isLessonCompleted(lesson.id) && (
-                        <View style={styles.lessonCompletedIcon}>
-                          <CheckCircle size={16} color="#FFFFFF" />
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  ))}
+                {module.lessons &&
+                  module.lessons.map((lesson, idx) => {
+                    const unlocked = isLessonUnlocked(module.lessons, idx);
+                    const completed = isLessonCompleted(lesson.id);
+                    return (
+                      <TouchableOpacity
+                        key={lesson.id}
+                        disabled={!unlocked}
+                        style={[
+                          styles.lessonItem,
+                          completed && styles.completedLessonItem,
+                          !unlocked && { opacity: 0.5 },
+                        ]}
+                        onPress={() => {
+                          const lessonParam = encodeURIComponent(
+                            JSON.stringify(lesson)
+                          );
+                          router.push({
+                            pathname: "/students/lesson-video",
+                            params: {
+                              lesson: lessonParam,
+                              moduleId: module.id,
+                              courseId: course?.id,
+                            },
+                          });
+                        }}
+                      >
+                        <Text style={styles.lessonTitle}>
+                          {lesson.title} ({lesson.duration || "0"} min)
+                        </Text>
+                        {completed && (
+                          <View style={styles.lessonCompletedIcon}>
+                            <CheckCircle size={16} color="#FFFFFF" />
+                          </View>
+                        )}
+                        {!completed && unlocked && (
+                          <Text style={{ color: "#4169E1", marginLeft: 8 }}>
+                            Next
+                          </Text>
+                        )}
+                        {!unlocked && (
+                          <Text style={{ color: "#aaa", marginLeft: 8 }}>
+                            Locked
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
                 {moduleQuizzes &&
                   moduleQuizzes.length > 0 &&
                   renderQuizButton(module)}
@@ -942,6 +1137,12 @@ export default function CourseDetailScreen() {
 
       {/* Tab Content */}
       <View style={styles.contentContainer}>{renderTabContent()}</View>
+      {certificateData && (
+        <CertificateView
+          certificate={certificateData}
+          onClose={() => setCertificateData(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }

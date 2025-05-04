@@ -48,6 +48,7 @@ export default function App() {
         const response = await api.getCoursesById(courseId, userToken);
         setCourse(response?.data);
 
+        console.debug({course})
         // Fetch module completion status
         if (response?.data?.modules) {
           await fetchModuleCompletionStatus(response.data.modules);
@@ -110,7 +111,7 @@ export default function App() {
       <StatusBar barStyle="light-content" />
       <ScrollView>
         <CourseHeader />
-        <LearningOutcomes />
+        <LearningOutcomes course={course!} />
         {/*  <CourseFeatures />*/}
         <Curriculum />
         <InstructorProfile />

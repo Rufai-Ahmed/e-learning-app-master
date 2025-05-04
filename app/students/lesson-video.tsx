@@ -16,6 +16,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEvent } from "expo";
 import { Lesson } from "@/lib/interfaces/course";
+import { useDispatch, useSelector } from "react-redux";
+import { markLessonCompleted } from "@/lib/reducers/storeLessonProgress";
 
 const { width } = Dimensions.get("window");
 
@@ -32,6 +34,12 @@ export default function LessonVideoScreen() {
   const { isPlaying } = useEvent(player, "playingChange", {
     isPlaying: player.playing,
   });
+
+  const dispatch = useDispatch();
+  const completedLessons = useSelector(
+    (state: any) => state.lessonProgress.completedLessons
+  );
+  const isCompleted = lesson ? !!completedLessons[lesson.id] : false;
 
   useEffect(() => {
     if (lesson) {
@@ -82,6 +90,35 @@ export default function LessonVideoScreen() {
             Duration: {lesson.duration || "0"} minutes
           </Text>
           <Text style={styles.lessonDescription}>{lesson.description}</Text>
+        </View>
+
+        {/* Mark as Completed Button */}
+        <View style={{ padding: 16, alignItems: "center" }}>
+          {isCompleted ? (
+            <Text
+              style={{ color: "#4CAF50", fontWeight: "bold", fontSize: 16 }}
+            >
+              Completed
+            </Text>
+          ) : (
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#4169E1",
+                paddingVertical: 12,
+                paddingHorizontal: 32,
+                borderRadius: 8,
+              }}
+              onPress={() => {
+                dispatch(markLessonCompleted({ lessonId: lesson.id }));
+                router.back();
+              }}
+              disabled={isCompleted}
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
+                Mark as Completed
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

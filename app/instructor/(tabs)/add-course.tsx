@@ -265,13 +265,24 @@ export default function CourseManagementScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
       allowsEditing: true,
       quality: 1,
+      videoExportPreset: ImagePicker.VideoExportPreset.MediumQuality,
     });
 
     if (!result.canceled && result.assets && result.assets?.length > 0) {
+      const videoUri = result.assets[0].uri;
+      const fileExtension = videoUri.split('.').pop()?.toLowerCase();
+
+      if (fileExtension === 'mkv') {
+        Alert.alert(
+          "Unsupported Format",
+          "MKV format is not supported. Please select an MP4 or MOV video."
+        );
+        return;
+      }
+
       setIsLoading(true);
 
       try {
-        const videoUri = result.assets[0].uri;
         const fileName = videoUri.split("/").pop() || "video.mp4";
 
         const blob = await convertUriToBlob(videoUri);
