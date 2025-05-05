@@ -537,4 +537,67 @@ export const api = {
     );
     return response?.data;
   },
+  updateQuestion: async function (
+    courseId: string,
+    moduleId: string,
+    quizId: string,
+    questionId: string,
+    data: { question: string },
+    token: string
+  ) {
+    const response = await axios.put(
+      `/courses/${courseId}/modules/${moduleId}/quiz/${quizId}/questions/${questionId}`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response?.data;
+  },
+  updateOption: async function (
+    courseId: string,
+    moduleId: string,
+    quizId: string,
+    questionId: string,
+    optionId: string,
+    data: { value: string; answer: boolean },
+    token: string
+  ) {
+    const response = await axios.put(
+      `/courses/${courseId}/modules/${moduleId}/quiz/${quizId}/questions/${questionId}/options/${optionId}`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response?.data;
+  },
+  createQuestion: async function (
+    courseId: string,
+    moduleId: string,
+    quizId: string,
+    data: {
+      question: string;
+      options: Array<{
+        value: string;
+        answer: boolean;
+      }>;
+    },
+    token: string
+  ) {
+    const response = await axios.post(
+      `/courses/${courseId}/modules/${moduleId}/quiz/${quizId}/questions`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  },
 };

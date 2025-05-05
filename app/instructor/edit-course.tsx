@@ -93,6 +93,13 @@ export default function EditCourseScreen() {
   const [isEditLessonModalVisible, setIsEditLessonModalVisible] =
     useState(false);
 
+  // Add new state for quiz editing
+  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
+  const [isEditQuizModalVisible, setIsEditQuizModalVisible] = useState(false);
+
+  // Add a new state for quiz loading
+  const [quizLoading, setQuizLoading] = useState(false);
+
   useEffect(() => {
     if (courseId) {
       fetchCourseDetails();
@@ -102,8 +109,11 @@ export default function EditCourseScreen() {
   const fetchCourseDetails = async () => {
     try {
       setLoading(true);
+      setQuizLoading(true);
+      console.log("Fetching course details for courseId:", courseId);
       const response = await api.getCoursesById(courseId, userToken);
       const courseData = response?.data;
+      console.log("Course data received:", courseData);
       setCourse(courseData);
 
       // Initialize form state
@@ -113,12 +123,75 @@ export default function EditCourseScreen() {
       setCategoryNames(courseData.category.map((cat: Category) => cat.name));
       setImageLink(courseData.image_link);
       setDiscount(courseData.discount);
-      setModules(courseData.modules || []);
+
+      // Fetch quizzes for each module
+      if (courseData.modules?.length > 0) {
+        console.log("Found modules, fetching quizzes:", courseData.modules);
+        const updatedModules = await Promise.all(
+          courseData.modules.map(async (module: Module) => {
+            try {
+              console.log("Fetching quiz for module:", module.id);
+              const quizData = await api.getModuleQuizzes(
+                courseId,
+                module.id,
+                userToken
+              );
+              console.log(
+                "Quiz data received for module:",
+                module.id,
+                quizData
+              );
+
+              if (quizData?.data?.[0]) {
+                const quizDetails = await api.getQuizById(
+                  courseId,
+                  module.id,
+                  quizData.data[0].id,
+                  userToken
+                );
+                console.log("Quiz details received:", quizDetails);
+
+                if (quizDetails) {
+                  return {
+                    ...module,
+                    quiz: [
+                      {
+                        ...quizDetails,
+                        questions: quizDetails.questions || [],
+                      },
+                    ],
+                  };
+                }
+              }
+              return {
+                ...module,
+                quiz: [],
+              };
+            } catch (error) {
+              console.error(
+                `Error fetching quiz for module ${module.id}:`,
+                error
+              );
+              return {
+                ...module,
+                quiz: [],
+              };
+            }
+          })
+        );
+
+        console.log("Updated modules with quizzes:", updatedModules);
+        setModules(updatedModules);
+      } else {
+        console.log("No modules found in course data");
+        setModules([]);
+      }
     } catch (error: any) {
       console.error("Error fetching course:", error?.response?.data);
       showAlert("error", "Failed to load course details");
     } finally {
       setLoading(false);
+      setQuizLoading(false);
     }
   };
 
@@ -339,96 +412,96 @@ export default function EditCourseScreen() {
     setIsAddQuizModalVisible(true);
   };
 
-  const handleAddQuestion = () => {
-    if (!currentQuestion?.question?.trim()) {
-      showAlert("error", "Question text is required");
-      return;
-    }
-    if (currentQuestion!.options?.length! < 2) {
-      showAlert("error", "At least 2 options are required");
-      return;
-    }
-    if (!currentQuestion!.options?.some((opt) => opt.answer)) {
-      showAlert("error", "Please mark at least one option as correct");
-      return;
-    }
-
-    setCurrentQuiz((prev) => ({
-      ...prev,
-      questions: [...prev.questions, currentQuestion],
-    }));
-    setCurrentQuestion({
-      question: "",
-      options: [],
-    });
-  };
-
-  const handleAddOption = () => {
-    if (!currentOption.value.trim()) {
-      showAlert("error", "Option text is required");
-      return;
-    }
-    setCurrentQuestion((prev) => ({
-      ...prev,
-      options: [...prev.options, currentOption],
-    }));
-    setCurrentOption({
-      value: "",
-      answer: false,
-    });
-  };
-
-  const handleRemoveOption = (index: number) => {
-    setCurrentQuestion((prev) => ({
-      ...prev,
-      options: prev.options.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleSetCorrectAnswer = (index: number) => {
-    setCurrentQuestion((prev) => ({
-      ...prev,
-      options: prev.options.map((opt, i) => ({
-        ...opt,
-        answer: i === index,
-      })),
-    }));
-  };
-
-  const handleSaveQuiz = async () => {
-    if (!selectedModuleForQuiz) return;
-    if (currentQuiz.questions.length === 0) {
-      showAlert("error", "At least one question is required");
+  const handleCreateQuiz = async () => {
+    if (!selectedModuleForQuiz || !currentQuiz) {
+      console.log("Missing required data for creating quiz:", {
+        selectedModuleForQuiz,
+        currentQuiz,
+      });
       return;
     }
 
     try {
       setLoading(true);
-      const quizData = {
-        questions: currentQuiz.questions.map((q) => ({
-          question: q.question,
-          options: q.options.map((o) => ({
-            value: o.value,
-            answer: o.answer,
-          })),
-        })),
-      };
+      console.log("Creating new quiz:", currentQuiz);
 
-      await api.createQuiz(
+      // Create the quiz with its questions and options
+      const response = await api.createQuiz(
         courseId,
         selectedModuleForQuiz,
-        quizData,
+        {
+          questions: currentQuiz?.questions?.map((q) => ({
+            question: q.question,
+            options: q.options.map((opt) => ({
+              value: opt.value,
+              answer: opt.answer || false,
+            })),
+          })),
+        },
         userToken
       );
-      showAlert("success", "Quiz added successfully");
+
+      console.log("Quiz created successfully:", response);
+      showAlert("success", "Quiz created successfully");
       setIsAddQuizModalVisible(false);
-      setCurrentQuiz({
-        questions: [],
-      });
+      setCurrentQuiz({ questions: [] });
+      setSelectedModuleForQuiz(null);
       fetchCourseDetails();
     } catch (error: any) {
-      console.error("Error adding quiz:", error?.response?.data);
-      showAlert("error", "Failed to add quiz");
+      console.error("Error creating quiz:", error?.response?.data);
+      showAlert("error", "Failed to create quiz");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveQuiz = async () => {
+    if (!editingQuiz) {
+      console.log("Missing required data for saving quiz:", editingQuiz);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log("Saving quiz:", editingQuiz);
+
+      // Update each question and its options
+      for (const question of editingQuiz.questions) {
+        // Update the question text
+        await api.updateQuestion(
+          courseId,
+          editingQuiz.module_id,
+          editingQuiz.id,
+          question.id,
+          { question: question.question },
+          userToken
+        );
+
+        // Update each option
+        for (const option of question.options) {
+          await api.updateOption(
+            courseId,
+            editingQuiz.module_id,
+            editingQuiz.id,
+            question.id,
+            option.id,
+            {
+              value: option.value,
+              answer: option.answer || false,
+            },
+            userToken
+          );
+        }
+      }
+
+      console.log("Quiz saved successfully");
+      showAlert("success", "Quiz updated successfully");
+      setIsEditQuizModalVisible(false);
+      setEditingQuiz(null);
+      fetchCourseDetails();
+    } catch (error: any) {
+      console.error("Error updating quiz:", error?.response?.data);
+      showAlert("error", "Failed to update quiz");
     } finally {
       setLoading(false);
     }
@@ -497,6 +570,90 @@ export default function EditCourseScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Add quiz editing handlers
+  const handleEditQuiz = (moduleId: string) => {
+    console.log("Editing quiz for module:", moduleId);
+    const module = modules.find((m) => m.id === moduleId);
+    console.log("Found module:", module);
+    if (module?.quiz?.[0]) {
+      console.log("Setting editing quiz:", module.quiz[0]);
+      setEditingQuiz(module.quiz[0]);
+      setIsEditQuizModalVisible(true);
+    } else {
+      console.log("No quiz found for module");
+    }
+  };
+
+  // Quiz option handlers
+  const handleAddOption = () => {
+    if (!currentOption.value.trim()) {
+      showAlert("error", "Option text cannot be empty");
+      return;
+    }
+
+    setCurrentQuestion((prev) => ({
+      ...prev,
+      options: [
+        ...(prev?.options || []),
+        {
+          value: currentOption.value,
+          answer: currentOption.answer || false,
+        },
+      ],
+    }));
+    setCurrentOption({ value: "", answer: false });
+  };
+
+  const handleRemoveOption = (index: number) => {
+    setCurrentQuestion((prev) => {
+      if (!prev?.options) return prev;
+      const newOptions = [...prev.options];
+      newOptions.splice(index, 1);
+      return {
+        ...prev,
+        options: newOptions,
+      };
+    });
+  };
+
+  const handleSetCorrectAnswer = (index: number) => {
+    setCurrentQuestion((prev) => {
+      if (!prev?.options) return prev;
+      const newOptions = prev.options.map((opt, i) => ({
+        ...opt,
+        answer: i === index,
+      }));
+      return {
+        ...prev,
+        options: newOptions,
+      };
+    });
+  };
+
+  const handleAddQuestion = () => {
+    if (!currentQuestion?.question?.trim()) {
+      showAlert("error", "Question text cannot be empty");
+      return;
+    }
+
+    if (!currentQuestion?.options?.length) {
+      showAlert("error", "Please add at least one option");
+      return;
+    }
+
+    const hasCorrectAnswer = currentQuestion.options.some((opt) => opt.answer);
+    if (!hasCorrectAnswer) {
+      showAlert("error", "Please mark the correct answer");
+      return;
+    }
+
+    setCurrentQuiz((prev) => ({
+      ...prev,
+      questions: [...(prev?.questions || []), currentQuestion],
+    }));
+    setCurrentQuestion({ question: "", options: [] });
   };
 
   if (loading) {
@@ -636,15 +793,24 @@ export default function EditCourseScreen() {
                   >
                     <Plus size={16} color="#4169E1" />
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setSelectedModuleForQuiz(module.id);
-                      setIsAddQuizModalVisible(true);
-                    }}
-                    style={styles.moduleActionButton}
-                  >
-                    <FileText size={16} color="#4169E1" />
-                  </TouchableOpacity>
+                  {module.quiz && module.quiz.length > 0 ? (
+                    <TouchableOpacity
+                      onPress={() => handleEditQuiz(module.id)}
+                      style={styles.moduleActionButton}
+                    >
+                      <FileText size={16} color="#4169E1" />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelectedModuleForQuiz(module.id);
+                        setIsAddQuizModalVisible(true);
+                      }}
+                      style={styles.moduleActionButton}
+                    >
+                      <FileText size={16} color="#4169E1" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </TouchableOpacity>
 
@@ -685,32 +851,62 @@ export default function EditCourseScreen() {
                   {module.quiz && module.quiz.length > 0 && (
                     <View style={styles.quizContainer}>
                       <Text style={styles.quizTitle}>Quizzes</Text>
-                      {module.quiz.map((quiz) => (
-                        <View key={quiz.id} style={styles.questionContainer}>
-                          {quiz.questions.map((question) => (
-                            <View key={question.id}>
-                              <Text style={styles.questionText}>
-                                {question.question}
-                              </Text>
-                              {question.options.map((option) => (
-                                <View
-                                  key={option.id}
-                                  style={styles.optionContainer}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.optionText,
-                                      option.answer && styles.correctOption,
-                                    ]}
+                      {quizLoading ? (
+                        <ActivityIndicator size="small" color="#4169E1" />
+                      ) : (
+                        module.quiz.map((quiz, quizIndex) => (
+                          <View key={quiz.id} style={styles.quizItem}>
+                            <Text style={styles.quizNumber}>
+                              Quiz {quizIndex + 1}
+                            </Text>
+                            {quiz.questions && quiz.questions.length > 0 ? (
+                              <View style={styles.questionContainer}>
+                                {quiz.questions.map((question, qIndex) => (
+                                  <View
+                                    key={question.id}
+                                    style={styles.questionItem}
                                   >
-                                    {option.value}
-                                  </Text>
-                                </View>
-                              ))}
-                            </View>
-                          ))}
-                        </View>
-                      ))}
+                                    <Text style={styles.questionNumber}>
+                                      Question {qIndex + 1}
+                                    </Text>
+                                    <Text style={styles.questionText}>
+                                      {question.question}
+                                    </Text>
+                                    {question.options &&
+                                      question.options.length > 0 && (
+                                        <View style={styles.optionsContainer}>
+                                          {question.options.map(
+                                            (option, oIndex) => (
+                                              <View
+                                                key={option.id}
+                                                style={[
+                                                  styles.optionItem,
+                                                  option.answer &&
+                                                    styles.correctOption,
+                                                ]}
+                                              >
+                                                <Text style={styles.optionText}>
+                                                  {String.fromCharCode(
+                                                    65 + oIndex
+                                                  )}
+                                                  . {option.value}
+                                                </Text>
+                                              </View>
+                                            )
+                                          )}
+                                        </View>
+                                      )}
+                                  </View>
+                                ))}
+                              </View>
+                            ) : (
+                              <Text style={styles.noQuestionsText}>
+                                No questions in this quiz
+                              </Text>
+                            )}
+                          </View>
+                        ))
+                      )}
                     </View>
                   )}
                 </View>
@@ -963,9 +1159,9 @@ export default function EditCourseScreen() {
               {/* Save Quiz Button */}
               <TouchableOpacity
                 style={[styles.button, styles.saveButton]}
-                onPress={handleSaveQuiz}
+                onPress={handleCreateQuiz}
               >
-                <Text style={styles.buttonText}>Save Quiz</Text>
+                <Text style={styles.buttonText}>Create Quiz</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -1048,6 +1244,189 @@ export default function EditCourseScreen() {
                 <Text style={styles.saveButtonText}>Save Changes</Text>
               )}
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Add Edit Quiz Modal */}
+      <Modal
+        visible={isEditQuizModalVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Quiz</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setIsEditQuizModalVisible(false);
+                  setEditingQuiz(null);
+                }}
+                style={styles.closeButton}
+              >
+                <X size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll}>
+              {editingQuiz?.questions.map((question, qIndex) => (
+                <View key={qIndex} style={styles.questionContainer}>
+                  <Text style={styles.label}>Question {qIndex + 1}</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    value={question.question}
+                    onChangeText={(text) => {
+                      setEditingQuiz((prev) => {
+                        if (!prev) return null;
+                        const newQuestions = [...prev.questions];
+                        newQuestions[qIndex] = {
+                          ...newQuestions[qIndex],
+                          question: text,
+                        };
+                        return { ...prev, questions: newQuestions };
+                      });
+                    }}
+                    placeholder="Enter question"
+                    multiline
+                    numberOfLines={3}
+                  />
+
+                  <Text style={styles.label}>Options</Text>
+                  {question.options.map((option, oIndex) => (
+                    <View key={oIndex} style={styles.optionRow}>
+                      <TouchableOpacity
+                        style={styles.radioButton}
+                        onPress={() => {
+                          setEditingQuiz((prev) => {
+                            if (!prev) return null;
+                            const newQuestions = [...prev.questions];
+                            const newOptions = newQuestions[qIndex].options.map(
+                              (opt, i) => ({
+                                ...opt,
+                                answer: i === oIndex,
+                              })
+                            );
+                            newQuestions[qIndex] = {
+                              ...newQuestions[qIndex],
+                              options: newOptions,
+                            };
+                            return { ...prev, questions: newQuestions };
+                          });
+                        }}
+                      >
+                        <View
+                          style={[
+                            styles.radioCircle,
+                            option.answer && styles.radioSelected,
+                          ]}
+                        >
+                          {option.answer && <View style={styles.radioInner} />}
+                        </View>
+                      </TouchableOpacity>
+                      <TextInput
+                        style={[styles.input, styles.optionInput]}
+                        value={option.value}
+                        onChangeText={(text) => {
+                          setEditingQuiz((prev) => {
+                            if (!prev) return null;
+                            const newQuestions = [...prev.questions];
+                            const newOptions = [
+                              ...newQuestions[qIndex].options,
+                            ];
+                            newOptions[oIndex] = {
+                              ...newOptions[oIndex],
+                              value: text,
+                            };
+                            newQuestions[qIndex] = {
+                              ...newQuestions[qIndex],
+                              options: newOptions,
+                            };
+                            return { ...prev, questions: newQuestions };
+                          });
+                        }}
+                        placeholder="Enter option text"
+                      />
+                      <TouchableOpacity
+                        onPress={() => {
+                          setEditingQuiz((prev) => {
+                            if (!prev) return null;
+                            const newQuestions = [...prev.questions];
+                            const newOptions = newQuestions[
+                              qIndex
+                            ].options.filter((_, i) => i !== oIndex);
+                            newQuestions[qIndex] = {
+                              ...newQuestions[qIndex],
+                              options: newOptions,
+                            };
+                            return { ...prev, questions: newQuestions };
+                          });
+                        }}
+                        style={styles.removeOptionButton}
+                      >
+                        <X size={16} color="#FF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+
+                  <TouchableOpacity
+                    style={styles.addOptionButton}
+                    onPress={() => {
+                      setEditingQuiz((prev) => {
+                        if (!prev) return null;
+                        return {
+                          ...prev,
+                          questions: [
+                            ...prev.questions,
+                            {
+                              question: "",
+                              options: [{ value: "", answer: false }],
+                            },
+                          ],
+                        };
+                      });
+                    }}
+                  >
+                    <Plus size={20} color="#4169E1" />
+                    <Text style={styles.addOptionText}>Add Option</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+
+              <TouchableOpacity
+                style={styles.addQuestionButton}
+                onPress={() => {
+                  setEditingQuiz((prev) => {
+                    if (!prev) return null;
+                    return {
+                      ...prev,
+                      questions: [
+                        ...prev.questions,
+                        {
+                          question: "",
+                          options: [{ value: "", answer: false }],
+                        },
+                      ],
+                    };
+                  });
+                }}
+              >
+                <Plus size={20} color="#4169E1" />
+                <Text style={styles.addQuestionText}>Add Question</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleSaveQuiz}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Quiz</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1261,49 +1640,68 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   quizContainer: {
-    marginTop: 12,
-    padding: 12,
+    marginTop: 20,
+    padding: 16,
     backgroundColor: "#f8f9fa",
     borderRadius: 8,
   },
   quizTitle: {
-    fontSize: 16,
-    fontWeight: "500",
+    fontSize: 18,
+    fontWeight: "600",
     color: "#333",
-    marginBottom: 8,
+    marginBottom: 16,
   },
-  quizDescription: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 12,
-  },
-  questionContainer: {
-    marginTop: 8,
-    padding: 12,
+  quizItem: {
+    marginBottom: 24,
+    padding: 16,
     backgroundColor: "white",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: "#e0e0e0",
   },
-  questionText: {
+  quizNumber: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#4169E1",
+    marginBottom: 12,
+  },
+  questionContainer: {
+    gap: 16,
+  },
+  questionItem: {
+    padding: 12,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+  },
+  questionNumber: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#333",
+    color: "#666",
     marginBottom: 8,
   },
-  optionContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4,
+  questionText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#333",
+    marginBottom: 12,
   },
-  optionText: {
-    flex: 1,
-    fontSize: 14,
-    color: "#666",
+  optionsContainer: {
+    gap: 8,
+  },
+  optionItem: {
+    padding: 8,
+    backgroundColor: "white",
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
   },
   correctOption: {
-    color: "#4CAF50",
-    fontWeight: "500",
+    backgroundColor: "#e6f7e6",
+    borderColor: "#4CAF50",
+  },
+  optionText: {
+    fontSize: 14,
+    color: "#333",
   },
   modalScroll: {
     maxHeight: "80%",
@@ -1312,9 +1710,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 8,
-    padding: 8,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
   },
   radioButton: {
     marginRight: 8,
@@ -1350,23 +1745,30 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   addOptionButton: {
-    padding: 8,
-    backgroundColor: "#4169E1",
-    borderRadius: 8,
-  },
-  button: {
-    padding: 12,
-    borderRadius: 8,
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 16,
+    padding: 8,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  addOptionText: {
+    marginLeft: 8,
+    color: "#4169E1",
   },
   addQuestionButton: {
-    backgroundColor: "#4169E1",
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    marginBottom: 16,
   },
-  buttonText: {
-    color: "white",
+  addQuestionText: {
+    marginLeft: 8,
+    color: "#4169E1",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "500",
   },
   questionsList: {
     marginTop: 24,
@@ -1380,5 +1782,12 @@ const styles = StyleSheet.create({
   optionItem: {
     marginTop: 4,
     paddingLeft: 24,
+  },
+  noQuestionsText: {
+    fontSize: 14,
+    color: "#666",
+    fontStyle: "italic",
+    textAlign: "center",
+    padding: 16,
   },
 });

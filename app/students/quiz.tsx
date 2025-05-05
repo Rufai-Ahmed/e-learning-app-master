@@ -87,30 +87,13 @@ export default function QuizScreen() {
     if (currentQuestionIndex < (quiz?.questions.length || 0) - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      setShowResults(true);
       handleSubmitQuiz();
     }
   };
 
-  const calculateScore = () => {
-    if (!quiz) return 0;
-    let correctAnswers = 0;
-    quiz.questions.forEach((question) => {
-      const selectedOption = question.options.find(
-        (opt) => opt.id === selectedOptions[question.id]
-      );
-      if (selectedOption?.answer) {
-        correctAnswers++;
-      }
-    });
-    const finalScore = (correctAnswers / quiz.questions.length) * 100;
-    setScore(finalScore);
-    setPassed(finalScore >= (quiz.passing_score || 70));
-    return finalScore;
-  };
-
   const handleSubmitQuiz = async () => {
     try {
+      setLoading(true);
       // Format answers in the correct structure
       const answers = Object.entries(selectedOptions).map(
         ([questionId, optionId]) => ({
@@ -120,34 +103,41 @@ export default function QuizScreen() {
       );
 
       // Submit quiz answers
-      await api.submitQuiz(courseId, moduleId, quiz?.id || "", answers, token);
+      const res = await api.submitQuiz(
+        courseId,
+        moduleId,
+        quiz?.id || "",
+        answers,
+        token
+      );
 
-      // Calculate score and check if passed
-      const finalScore = calculateScore();
+      if (!res?.data) {
+        throw new Error("No response data received");
+      }
+
+      // Calculate score percentage
+      const correctAnswers = parseInt(res.data.score);
+      const totalQuestions = res.data.total_no_of_questions;
+      const scorePercentage = (correctAnswers / totalQuestions) * 100;
+
+      setScore(correctAnswers);
+      setPassed(scorePercentage >= 70);
 
       // If quiz is passed and we have a callback, post a message to mark it as completed
-      if (passed && callback?.type === "markQuizCompleted") {
-        // Post message to parent to mark quiz as completed
-        router.setParams({
-          action: "markQuizCompleted",
+      if (scorePercentage >= 70 && callback?.type === "markQuizCompleted") {
+        await router.setParams({
+          action: "markQuizCompleted", 
           moduleId: callback.moduleId,
         });
       }
 
       // Show results
-      alert(
-        `Quiz completed! Your score: ${finalScore.toFixed(1)}%${
-          passed
-            ? "\nCongratulations! You passed!"
-            : "\nTry again to pass the quiz."
-        }`
-      );
-
-      // Go back to the course
-      router.back();
+      setShowResults(true);
     } catch (error) {
       console.error("Error submitting quiz:", error);
       alert("Failed to submit quiz. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -177,7 +167,12 @@ export default function QuizScreen() {
       </View>
 
       <ScrollView style={styles.content}>
-        {!showResults ? (
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4169E1" />
+            <Text style={styles.loadingText}>Submitting quiz...</Text>
+          </View>
+        ) : !showResults ? (
           <View style={styles.questionContainer}>
             <Text style={styles.questionCounter}>
               Question {currentQuestionIndex + 1} of {quiz.questions.length}
@@ -218,6 +213,8 @@ export default function QuizScreen() {
               <Text style={styles.nextButtonText}>
                 {currentQuestionIndex < quiz.questions.length - 1
                   ? "Next Question"
+                  : loading
+                  ? "Submitting..."
                   : "Finish Quiz"}
               </Text>
             </TouchableOpacity>
@@ -229,7 +226,10 @@ export default function QuizScreen() {
               You've answered {Object.keys(selectedOptions).length} out of{" "}
               {quiz.questions.length} questions.
             </Text>
-            <Text style={styles.scoreText}>Score: {score.toFixed(1)}%</Text>
+            <Text style={styles.scoreText}>
+              Score: {score} / {quiz.questions.length} (
+              {((score / quiz.questions.length) * 100).toFixed(0)}%)
+            </Text>
             <Text
               style={[
                 styles.passFailText,
@@ -238,6 +238,12 @@ export default function QuizScreen() {
             >
               {passed ? "Passed!" : "Not Passed"}
             </Text>
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.submitButtonText}>Return to Course</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>

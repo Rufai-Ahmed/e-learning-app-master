@@ -566,13 +566,20 @@ export default function CourseDetailScreen() {
   const handleGetCertificate = async () => {
     if (!courseDetails?.id || !userLoginToken) return;
     setCertificateLoading(true);
-    setCertificateData(null);
     try {
       const cert = await api.getCourseCertificate(
         courseDetails.id,
         userLoginToken
       );
-      setCertificateData(cert);
+      console.debug({cert})
+      if (cert) {
+        router.push({
+          pathname: "/students/certificate",
+          params: { certificate: JSON.stringify(cert) },
+        });
+      } else {
+        showAlert("error", "No certificate data found");
+      }
     } catch (err: any) {
       showAlert("error", err?.message || "Failed to fetch certificate");
     } finally {
