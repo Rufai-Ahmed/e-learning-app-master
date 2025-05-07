@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
+import { View, TouchableOpacity, Text, StyleSheet, Share, Dimensions } from "react-native";
 import {
   Svg,
-  Text as SvgText,
-  Rect,
-  Path,
-  G,
-  Circle,
   Defs,
+  Rect,
   LinearGradient,
   Stop,
+  G,
+  Circle,
+  Path,
+  Text as SvgText,
 } from "react-native-svg";
 import { Course } from "@/lib/interfaces/course";
 import { api } from "@/lib/actions/api";
 import { RootState } from "@/lib/store";
 import { useAppSelector } from "@/hooks/useAppSelector";
-import * as FileSystem from "expo-file-system";
-import * as Sharing from "expo-sharing";
+
+// Capture screen dimensions for responsive sizing
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 interface CertificateSVGProps {
   studentName: string;
@@ -32,136 +33,64 @@ export default function CertificateSVG({
   date,
 }: CertificateSVGProps) {
   const [course, setCourse] = useState<Course | null>(null);
-  const userLoginToken = useAppSelector(
-    (state: RootState) => state.user.userLoginToken
-  );
+  const token = useAppSelector((state: RootState) => state.user.userLoginToken);
 
   useEffect(() => {
-    const fetchCourse = async () => {
-      const course = await api.getCoursesById(courseId, userLoginToken);
-      setCourse(course?.data);
-    };
-    fetchCourse();
-  }, [courseId]);
+    (async () => {
+      try {
+        const res = await api.getCoursesById(courseId, token);
+        setCourse(res?.data);
+      } catch (err) {
+        console.warn('Error fetching course:', err);
+      }
+    })();
+  }, [courseId, token]);
 
-  const generateSVGString = () => {
-    return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="792" height="612" viewBox="0 0 792 612" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="headerGradient" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#4169E1" stop-opacity="0.8"/>
-      <stop offset="1" stop-color="#008080" stop-opacity="0.8"/>
-    </linearGradient>
-  </defs>
-
-  <!-- Background with subtle pattern -->
-  <rect width="762.665" height="577.575" x="14.829" y="15.312" fill="#ffffff"/>
-  
-  <!-- Decorative header bar -->
-  <rect width="762.665" height="80" x="14.829" y="15.312" fill="url(#headerGradient)"/>
-
-  <!-- Decorative Elements -->
-  <g>
-    <circle cx="396" cy="306" r="150" fill="#f1f2f2" opacity="0.3"/>
-    <path d="M 324.987,221.342 h 142.034 l -2.84038,8.74667 2.84038,9.62733 H 324.987 l 4.26059,-9.18634 -4.26059,-9.18766 z" fill="#4169E1" opacity="0.7"/>
-    <path d="M 452.19212,194.30857 C 400,150 350,180 300,150" stroke="#008080" stroke-width="2" fill="none" opacity="0.5"/>
-  </g>
-
-  <!-- Title -->
-  <text x="396" y="107.315" font-size="42" font-family="Arial-BoldMT" fill="#ffffff" text-anchor="middle">Certificate of Completion</text>
-
-  <!-- Certificate Text -->
-  <text x="396" y="326.274" font-size="16" font-family="ArialMT" fill="#414042" text-anchor="middle">This certificate has been awarded for successfully completing the course</text>
-  <text x="396" y="356.274" font-size="24" font-family="Arial-BoldMT" fill="#4169E1" text-anchor="middle">${
-    course?.name || ""
-  }</text>
-
-  <!-- Recipient Info -->
-  <text x="396" y="426.274" font-size="20" font-family="Arial-BoldMT" fill="#414042" text-anchor="middle">${studentName}</text>
-
-  <!-- Date and Instructor -->
-  <text x="137.111" y="501.274" font-size="14" font-family="ArialMT" fill="#808285">Date of Award: ${date}</text>
-  <text x="654.829" y="501.274" font-size="14" font-family="ArialMT" fill="#808285" text-anchor="end">Certified by: ${instructorName}</text>
-
-  <!-- Border with double stroke -->
-  <rect width="762.665" height="577.575" x="14.829" y="15.312" fill="none" stroke="#4169E1" stroke-width="2"/>
-  <rect width="752.665" height="567.575" x="19.829" y="20.312" fill="none" stroke="#008080" stroke-width="1" opacity="0.5"/>
-</svg>`;
-  };
-
-  const handleDownload = async () => {
+  const handleShare = async () => {
+    const message = `Certificate: ${course?.name || ''}\nStudent: ${studentName}\nInstructor: ${instructorName}\nDate: ${date}`;
     try {
-      // Generate SVG string with current data
-      const svgString = generateSVGString();
-
-      // Create temporary file
-      const fileUri = FileSystem.documentDirectory + "certificate.svg";
-      await FileSystem.writeAsStringAsync(fileUri, svgString);
-
-      // Share file
-      await Sharing.shareAsync(fileUri, {
-        mimeType: "image/svg+xml",
-        dialogTitle: "Download Certificate",
-        UTI: "public.svg-image",
-      });
-
-      // Cleanup
-      await FileSystem.deleteAsync(fileUri);
-    } catch (error) {
-      console.error("Error downloading certificate:", error);
+      await Share.share({ title: 'Certificate of Completion', message });
+    } catch (err) {
+      console.error('Share failed:', err);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Svg width="100%" height="100%" viewBox="0 0 792 612">
+      <Svg
+        width={screenWidth * 0.9}
+        height={screenHeight * 0.8}
+        viewBox="0 0 792 612"
+      >
         <Defs>
-          <LinearGradient id="headerGradient" x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0" stopColor="#4169E1" stopOpacity="0.8" />
-            <Stop offset="1" stopColor="#008080" stopOpacity="0.8" />
+          {/* Full-bleed multi-stop gradient */}
+          <LinearGradient
+            id="bgGradient"
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="1"
+            gradientTransform="rotate(90)"
+          >
+            <Stop offset="0%" stopColor="#ffffff" />
+            <Stop offset="50%" stopColor="#008080" />
+            <Stop offset="100%" stopColor="#f1f2f2" />
           </LinearGradient>
         </Defs>
 
-        {/* Background with subtle pattern */}
-        <Rect
-          width="762.665"
-          height="577.575"
-          x="14.829"
-          y="15.312"
-          fill="#ffffff"
-        />
+        {/* Background */}
+        <Rect width="792" height="612" fill="url(#bgGradient)" />
 
-        {/* Decorative header bar */}
-        <Rect
-          width="762.665"
-          height="80"
-          x="14.829"
-          y="15.312"
-          fill="url(#headerGradient)"
-        />
-
-        {/* Decorative Elements */}
-        <G>
-          <Circle cx="396" cy="306" r="150" fill="#f1f2f2" opacity="0.3" />
-          <Path
-            d="M 324.987,221.342 h 142.034 l -2.84038,8.74667 2.84038,9.62733 H 324.987 l 4.26059,-9.18634 -4.26059,-9.18766 z"
-            fill="#4169E1"
-            opacity="0.7"
-          />
-          <Path
-            d="M 452.19212,194.30857 C 400,150 350,180 300,150"
-            stroke="#008080"
-            strokeWidth="2"
-            fill="none"
-            opacity="0.5"
-          />
+        {/* Tonal watermark for depth */}
+        <G opacity={0.1}>
+          <Circle cx="396" cy="306" r="200" fill="#008080" />
         </G>
 
-        {/* Title */}
+        {/* Certificate Title & Text */}
         <SvgText
           x="396"
-          y="107.315"
-          fontSize="42"
+          y="90"
+          fontSize={36}
           fontFamily="Arial-BoldMT"
           fill="#ffffff"
           textAnchor="middle"
@@ -169,87 +98,104 @@ export default function CertificateSVG({
           Certificate of Completion
         </SvgText>
 
-        {/* Certificate Text */}
         <SvgText
           x="396"
-          y="326.274"
-          fontSize="16"
+          y="150"
+          fontSize={18}
           fontFamily="ArialMT"
-          fill="#414042"
+          fill="#333333"
           textAnchor="middle"
         >
-          This certificate has been awarded for successfully completing the
-          course
-        </SvgText>
-        <SvgText
-          x="396"
-          y="356.274"
-          fontSize="24"
-          fontFamily="Arial-BoldMT"
-          fill="#4169E1"
-          textAnchor="middle"
-        >
-          {course?.name}
+          This certifies that
         </SvgText>
 
-        {/* Recipient Info */}
         <SvgText
           x="396"
-          y="426.274"
-          fontSize="20"
+          y="190"
+          fontSize={30}
           fontFamily="Arial-BoldMT"
-          fill="#414042"
+          fill="#008080"
           textAnchor="middle"
         >
           {studentName}
         </SvgText>
 
-        {/* Date and Instructor */}
         <SvgText
-          x="137.111"
-          y="501.274"
-          fontSize="14"
+          x="396"
+          y="230"
+          fontSize={18}
           fontFamily="ArialMT"
-          fill="#808285"
+          fill="#333333"
+          textAnchor="middle"
+        >
+          has successfully completed the course
+        </SvgText>
+
+        <SvgText
+          x="396"
+          y="270"
+          fontSize={24}
+          fontFamily="Arial-BoldMT"
+          fill="#4169E1"
+          textAnchor="middle"
+        >
+          {course?.name || 'Loading...'}
+        </SvgText>
+
+        {/* Accent Divider */}
+        <Path
+          d="M 200 300 H 592"
+          stroke="#4169E1"
+          strokeWidth={2}
+          opacity={0.6}
+        />
+
+        {/* Footer Info */}
+        <SvgText
+          x="40"
+          y="580"
+          fontSize={14}
+          fontFamily="ArialMT"
+          fill="#666666"
         >
           Date of Award: {date}
         </SvgText>
 
         <SvgText
-          x="654.829"
-          y="501.274"
-          fontSize="14"
+          x="752"
+          y="580"
+          fontSize={14}
           fontFamily="ArialMT"
-          fill="#808285"
+          fill="#666666"
           textAnchor="end"
         >
-          Certified by: {instructorName}
+          Instructor: {instructorName}
         </SvgText>
 
-        {/* Border with double stroke */}
+        {/* Dual Borders */}
         <Rect
-          width="762.665"
-          height="577.575"
-          x="14.829"
-          y="15.312"
+          x="8"
+          y="8"
+          width="776"
+          height="596"
+          stroke="#008080"
+          strokeWidth={4}
           fill="none"
-          stroke="#4169E1"
-          strokeWidth="2"
         />
         <Rect
-          width="752.665"
-          height="567.575"
-          x="19.829"
-          y="20.312"
+          x="20"
+          y="20"
+          width="752"
+          height="572"
+          stroke="#4169E1"
+          strokeWidth={2}
           fill="none"
-          stroke="#008080"
-          strokeWidth="1"
-          opacity="0.5"
+          opacity={0.5}
         />
       </Svg>
 
-      <TouchableOpacity style={styles.downloadButton} onPress={handleDownload}>
-        <Text style={styles.buttonText}>Download Certificate</Text>
+      <TouchableOpacity style={styles.button} onPress={handleShare}>
+        <Text style={styles.buttonText}>Share Certificate</Text>
       </TouchableOpacity>
     </View>
   );
@@ -258,24 +204,21 @@ export default function CertificateSVG({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f5f5f5',
   },
-  downloadButton: {
-    marginTop: 20,
-    backgroundColor: "#4169E1",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+  button: {
+    marginTop: 24,
+    backgroundColor: '#008080',
+    paddingHorizontal: 28,
+    paddingVertical: 12,
     borderRadius: 8,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    elevation: 4,
   },
   buttonText: {
-    color: "#ffffff",
+    color: '#ffffff',
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: '600',
   },
 });

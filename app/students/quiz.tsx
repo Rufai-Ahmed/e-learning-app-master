@@ -14,6 +14,9 @@ import { ArrowLeft } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { api } from "@/lib/actions/api";
 import { useAppSelector } from "@/hooks/useAppSelector";
+import { useDispatch, useSelector } from "react-redux";
+import { markQuizCompleted } from "@/lib/reducers/storeLessonProgress";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
 
 interface Option {
   value: string;
@@ -60,6 +63,10 @@ export default function QuizScreen() {
     : null;
 
   const token = useAppSelector((state: RootState) => state.user.userLoginToken);
+  const dispatch = useAppDispatch();
+  const completedQuizzes = useAppSelector(
+    (state: any) => state.quizProgress?.completedQuizzes || {}
+  );
 
   const [loading, setLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -74,7 +81,7 @@ export default function QuizScreen() {
     if (quiz) {
       setLoading(false);
     }
-  }, [quiz]);
+  }, []);
 
   const handleOptionSelect = (questionId: string, optionId: string) => {
     setSelectedOptions({
@@ -94,7 +101,6 @@ export default function QuizScreen() {
   const handleSubmitQuiz = async () => {
     try {
       setLoading(true);
-      // Format answers in the correct structure
       const answers = Object.entries(selectedOptions).map(
         ([questionId, optionId]) => ({
           question_id: questionId,
@@ -102,7 +108,6 @@ export default function QuizScreen() {
         })
       );
 
-      // Submit quiz answers
       const res = await api.submitQuiz(
         courseId,
         moduleId,
@@ -115,7 +120,6 @@ export default function QuizScreen() {
         throw new Error("No response data received");
       }
 
-      // Calculate score percentage
       const correctAnswers = parseInt(res.data.score);
       const totalQuestions = res.data.total_no_of_questions;
       const scorePercentage = (correctAnswers / totalQuestions) * 100;
@@ -123,15 +127,19 @@ export default function QuizScreen() {
       setScore(correctAnswers);
       setPassed(scorePercentage >= 70);
 
-      // If quiz is passed and we have a callback, post a message to mark it as completed
-      if (scorePercentage >= 70 && callback?.type === "markQuizCompleted") {
-        await router.setParams({
-          action: "markQuizCompleted", 
-          moduleId: callback.moduleId,
-        });
+      if (scorePercentage >= 70) {
+        // Dispatch to Redux store using the new action
+        dispatch(markQuizCompleted(moduleId));
+
+        // If we have a callback, also update the URL params
+        if (callback?.type === "markQuizCompleted") {
+          await router.setParams({
+            action: "markQuizCompleted",
+            moduleId: callback.moduleId,
+          });
+        }
       }
 
-      // Show results
       setShowResults(true);
     } catch (error) {
       console.error("Error submitting quiz:", error);

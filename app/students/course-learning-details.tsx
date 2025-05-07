@@ -141,8 +141,16 @@ const QuizButton = ({
   const [hasQuiz, setHasQuiz] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [quizData, setQuizData] = useState<Quiz | null>(null);
-  const isCompleted = quizCompletionStatus[module.id];
+  const moduleId = typeof module === "string" ? module : module.id;
+  const isCompleted = Boolean(quizCompletionStatus?.[moduleId]);
   const { showAlert } = useAlert();
+  const completedLessons = useSelector(
+    (state: any) => state.lessonProgress.completedLessons
+  );
+
+  const areAllLessonsCompleted = () => {
+    return module.lessons.every((lesson) => completedLessons[lesson.id]);
+  };
 
   useEffect(() => {
     const checkQuiz = async () => {
@@ -174,7 +182,14 @@ const QuizButton = ({
   }, [module.id, course?.id, userLoginToken]);
 
   const handleQuizPress = async () => {
-    console.log({ quizData, course, userLoginToken }, "quizData");
+    if (!areAllLessonsCompleted()) {
+      showAlert(
+        "error" as AlertType,
+        "Please complete all lessons in this module before taking the quiz."
+      );
+      return;
+    }
+
     if (!course?.id || !userLoginToken || !quizData) return;
 
     try {
@@ -198,25 +213,37 @@ const QuizButton = ({
 
   if (!hasQuiz) return null;
 
+  const allLessonsCompleted = areAllLessonsCompleted();
+
   return (
     <TouchableOpacity
-      style={[styles.quizButton, isCompleted && styles.quizButtonCompleted]}
+      style={[
+        styles.quizButton,
+        isCompleted && styles.quizButtonCompleted,
+        !allLessonsCompleted && { backgroundColor: "#ccc" },
+      ]}
       onPress={handleQuizPress}
-      disabled={isLoading || isCompleted}
+      disabled={isLoading || isCompleted || !allLessonsCompleted}
     >
       {isLoading ? (
         <ActivityIndicator color="#fff" style={styles.quizButtonLoader} />
       ) : (
         <View style={styles.quizButtonContent}>
           <Text style={styles.quizButtonText}>
-            {isCompleted ? "Quiz Completed" : "Take Quiz"}
+            {isCompleted
+              ? "Quiz Completed"
+              : allLessonsCompleted
+              ? "Take Quiz"
+              : "Complete Lessons First"}
           </Text>
           <Text style={styles.quizButtonSubtext}>
             {isCompleted
               ? "You have completed this quiz"
-              : `Test your knowledge (${
+              : allLessonsCompleted
+              ? `Test your knowledge (${
                   quizData?.questions?.length || 0
-                } questions)`}
+                } questions)`
+              : "Complete all lessons to unlock the quiz"}
           </Text>
           <View style={styles.quizButtonIcon}>
             <BookOpen size={24} color="#FFFFFF" />
@@ -255,9 +282,9 @@ export default function CourseDetailScreen() {
   } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const { showAlert } = useAlert();
-  const [quizCompletionStatus, setQuizCompletionStatus] = useState<{
-    [key: string]: boolean;
-  }>({});
+  const completedQuizzes = useSelector(
+    (state: any) => state.lessonProgress?.completedQuizzes || {}
+  );
   const [loadingQuiz, setLoadingQuiz] = useState<string | null>(null);
   const [moduleQuizzes, setModuleQuizzes] = useState([]);
   const dispatch = useDispatch();
@@ -421,18 +448,13 @@ export default function CourseDetailScreen() {
   };
 
   const isQuizCompleted = (moduleId: string) => {
-    return quizCompletionStatus[moduleId] || false;
+    return completedQuizzes[moduleId] || false;
   };
 
   const markQuizAsCompleted = async (moduleId: string) => {
     if (!userId || !course?.id) return;
 
     try {
-      setQuizCompletionStatus((prev) => ({
-        ...prev,
-        [moduleId]: true,
-      }));
-
       const module = courseDetails?.modules.find((m) => m.id === moduleId);
       if (module) {
         const allLessonsCompleted = module.lessons.every((lesson) =>
@@ -571,7 +593,7 @@ export default function CourseDetailScreen() {
         courseDetails.id,
         userLoginToken
       );
-      console.debug({cert})
+      console.debug({ cert });
       if (cert) {
         router.push({
           pathname: "/students/certificate",
@@ -707,12 +729,17 @@ export default function CourseDetailScreen() {
           </View>
         );
       case "Curriculum":
-        // Flatten all lessons for progress
         const allLessons =
           courseDetails?.modules.flatMap((m: any) => m.lessons) || [];
         const allCompleted =
           allLessons.length > 0 &&
           allLessons.every((lesson: any) => isLessonCompleted(lesson.id));
+        const allQuizzesCompleted = courseDetails?.modules.every(
+          (module: Module) => {
+            const moduleId = typeof module === "string" ? module : module.id;
+            return Boolean(completedQuizzes?.[moduleId]);
+          }
+        );
         const currentLessonIdx = allLessons.findIndex(
           (lesson: any) => !isLessonCompleted(lesson.id)
         );
@@ -721,7 +748,7 @@ export default function CourseDetailScreen() {
           <ScrollView style={styles.tabContent}>
             {/* Progress Card */}
             <View style={{ marginBottom: 24 }}>
-              {allCompleted ? (
+              {allCompleted && allQuizzesCompleted ? (
                 <View
                   style={[styles.moduleContainer, { alignItems: "center" }]}
                 >
@@ -735,7 +762,7 @@ export default function CourseDetailScreen() {
                     Course Completed
                   </Text>
                   <Text style={{ marginBottom: 16 }}>
-                    You've finished all lessons
+                    You've finished all lessons and quizzes
                   </Text>
                   <TouchableOpacity
                     style={[
@@ -809,6 +836,11 @@ export default function CourseDetailScreen() {
                   {currentLessonIdx > 0 && (
                     <Text style={{ marginBottom: 8 }}>
                       You've finished the lesson.
+                    </Text>
+                  )}
+                  {!allQuizzesCompleted && (
+                    <Text style={{ marginBottom: 8, color: "#666" }}>
+                      Complete all quizzes to get your certificate
                     </Text>
                   )}
                   <TouchableOpacity
@@ -981,9 +1013,10 @@ export default function CourseDetailScreen() {
         return (
           <ScrollView style={styles.tabContent}>
             {courseDetails.modules.map((module) => {
-              const isCompleted = quizCompletionStatus[module.id];
+              const moduleId = typeof module === "string" ? module : module.id;
+              const isCompleted = Boolean(completedQuizzes?.[moduleId]);
               return (
-                <View key={module.id} style={styles.quizCard}>
+                <View key={moduleId} style={styles.quizCard}>
                   <View style={styles.quizCardHeader}>
                     <Text style={styles.quizCardTitle}>{module.title}</Text>
                     {isCompleted && (
@@ -1000,7 +1033,7 @@ export default function CourseDetailScreen() {
                     module={module}
                     course={course}
                     userLoginToken={userLoginToken}
-                    quizCompletionStatus={quizCompletionStatus}
+                    quizCompletionStatus={completedQuizzes}
                   />
                 </View>
               );
@@ -1079,7 +1112,7 @@ export default function CourseDetailScreen() {
         module={module}
         course={course}
         userLoginToken={userLoginToken}
-        quizCompletionStatus={quizCompletionStatus}
+        quizCompletionStatus={completedQuizzes}
       />
     );
   };
